@@ -131,6 +131,7 @@ int main(int argc, char** argv)
     std::cout << "Connected peer:\n"
                  "  Remote address: " << inet_ntoa(peer_address.sin_addr) << "\n" <<
                  "  Remote port:    " << ntohs(peer_address.sin_port) << std::endl;
+    std::cout << std::endl;
 
 
     char message[] = "Hello. You've just connected to the TestTcp server.";

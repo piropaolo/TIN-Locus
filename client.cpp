@@ -9,6 +9,10 @@
 #include <cerrno>
 #include <unistd.h>
 
+// NOTE: C++11 required
+#include <thread>
+#include <chrono>
+
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -34,44 +38,6 @@ int main(int argc, char** argv)
     std::cout << "Socket fd: " << sock_fd << std::endl;
 
 
-    // TODOAPP change for client
-    struct sockaddr_in address;
-    address.sin_family = AF_INET;
-    address.sin_port = htons(PORT);
-    address.sin_addr.s_addr = htonl(INADDR_ANY);   // bind to all local interfaces
-
-    if( bind(sock_fd, (struct sockaddr *) &address, sizeof address) != 0 )
-    {
-        std::cerr << "Error binding name to the socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    int addr_len = sizeof address;
-    if( getsockname(sock_fd, (struct sockaddr *) &address, (socklen_t *) &addr_len) != 0 )
-    {
-        std::cerr << "Error retrieving socket name\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    if( addr_len > sizeof address ) // TODO not needed
-    {
-        std::cerr << "Retrieved local address truncated because of insufficient addr buffer\n"
-                     /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
-    }
-    if( addr_len != sizeof address )
-    {
-        std::cerr << "Retrieved local address of wrong format\n"
-                     /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
-    }
-
-    std::cout << "Socket bound to local port: " << ntohs(address.sin_port) << '\n' <<
-                 "Local address: " << inet_ntoa(address.sin_addr) << std::endl;
-    std::cout << std::endl;
-
-
     struct sockaddr_in remote_address;
     remote_address.sin_family = AF_INET;
     remote_address.sin_port = htons(REMOTE_SRV_PORT);
@@ -83,6 +49,7 @@ int main(int argc, char** argv)
                      "Error: " << std::strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
+    // automatically bounds the socket to a random free port or to a usable shared port with the local address set to INADDR_ANY (0.0.0.0)
 
     std::cout << "## Connection with the server established ##" << std::endl;
 
@@ -109,6 +76,38 @@ int main(int argc, char** argv)
     std::cout << "Server:\n"
                  "  Remote address: " << inet_ntoa(remote_address.sin_addr) << '\n' <<
                  "  Remote port: " << ntohs(remote_address.sin_port) << std::endl;
+
+
+    // TODOAPP change for client
+    struct sockaddr_in local_address;
+    int local_addr_len = sizeof local_address;
+
+    if( getsockname(sock_fd, (struct sockaddr *) &local_address, (socklen_t *) &local_addr_len) != 0 )
+    {
+        std::cerr << "Error retrieving local socket name\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if( local_addr_len > sizeof local_address ) // TODO not needed
+    {
+        std::cerr << "Retrieved local address truncated because of insufficient addr buffer\n"
+                     /*"Errno: " << errno*/ << std::endl;
+        exit(EXIT_FAILURE);
+    }
+    if( local_addr_len != sizeof local_address )
+    {
+        std::cerr << "Retrieved local address of wrong format\n"
+                     /*"Errno: " << errno*/ << std::endl;
+        exit(EXIT_FAILURE);
+    }
+
+    std::cout << "Local host:\n"
+                 "  Local port: " << ntohs(local_address.sin_port) << '\n' <<
+                 "  Local address: " << inet_ntoa(local_address.sin_addr) << std::endl;
+    std::cout << std::endl;
+
+
+    std::this_thread::sleep_for(std::chrono::seconds(10));
 
 
     // SHUT_RD, SHUT_WR, SHUT_RDWR

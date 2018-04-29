@@ -10,6 +10,15 @@
 
 - delete socket bind from client (same socket without SO_REUSEADDR problem)
 
+TESTS:
+- kill (sigkil) applications (server, client) at different points of execution
+
+- e.g. server killed != server performed an orderly shutdown !!
+
+SECURITY:
+
+
+
 MAKEFILE:
 - -pthread ? C++11 threads
 - add compiler flags as flags in makefile
@@ -19,3 +28,8 @@ MAKEFILE:
 - add -std=c++11 / -std=c++0x
 - -std=c++14
 - -fext-numeric-literals ??
+
+
+TCP PACKETS:
+- sniff using WireShark +gdb instruction/function stepping 
+    +or sleep's in the programs (which system function sends what)

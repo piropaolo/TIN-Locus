@@ -10,7 +10,7 @@ client : client.o
 	g++ -o client client.o
 
 client.o : client.cpp
-	g++ -c client.cpp
+	g++ -c client.cpp -std=c++11
 
 clean :
 	rm server server.o
