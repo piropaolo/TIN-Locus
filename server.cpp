@@ -101,12 +101,10 @@ int main(int argc, char** argv)
     }
 
     int con_sock_fd;
-    struct /*sockaddr*/ sockaddr_in peer_address; // TODOSEC change to struct sockaddr_in
-    /*socklen_t*/ int peer_addr_len = sizeof peer_address;
+    struct sockaddr_in peer_address;
+    int peer_addr_len = sizeof peer_address;
     con_sock_fd = accept(sock_fd, (struct sockaddr *) &peer_address, (socklen_t *) &peer_addr_len);
-    // accept(sock_fd, NULL, NULL)
-    // accept4(sock_fd, &peer_address, &peer_addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC)
-    // nonblocking accept, accept4 is a nonstandard Linux extension
+
     if( con_sock_fd < 0 )
     {
         std::cerr << "Error accepting a connection on the socket\n"
@@ -125,10 +123,7 @@ int main(int argc, char** argv)
                      /*"Errno: " << errno*/ << std::endl;
         std::exit(EXIT_FAILURE);
     }
-    // TODOAPP cast the peer address to the appriopriate address structure as known to the communications layer
-    // TODOAPP assume only IPv4 formats or also PIv6? IPv4 -- IPv6 connections???
-    // AF_INET + SOCK_STREAM => IPv4, struct sockaddr_in
-    // we serve/accept only IPv4 TCP connections => only struct sockaddr_in address structure
+    
 
     std::cout << "Connected peer:\n"
                  "  Remote address: " << inet_ntoa(peer_address.sin_addr) << "\n" <<
@@ -145,12 +140,20 @@ int main(int argc, char** argv)
     send_message(con_sock_fd, weclome_message, sizeof weclome_message);
 
 
+    // shut down the sending part of the full-duplex TCP connection (disallow further transmissions)
+    if( shutdown(sock_fd, SHUT_RD) != 0 )
+    {
+        std::cerr << "Error shuting down transmissions on the local socket\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+
     char message_buffer[MSG_BUF_SIZE];
     ssize_t bytes_received = 0;
 
     while( true )
     {
-        // in loop? (for 1 message, I mean)
         bytes_received = recv(con_sock_fd, message_buffer, MSG_BUF_SIZE, 0);
 
         if( bytes_received < 0 )
@@ -163,20 +166,15 @@ int main(int argc, char** argv)
         {
             std::cout << "# The peer has performed an orderly shutdown." << std::endl;
             break;
-        }
-        
-        char last_char = message_buffer[MSG_BUF_SIZE - 1];
-        message_buffer[MSG_BUF_SIZE - 1] = '\0';
+        }  
+
         std::cout << bytes_received << " bytes received. Message:\n" <<
-                     "> " << message_buffer << last_char << std::endl;    
+                     "> ";
+        std::cout.write(message_buffer, bytes_received);
+        std::cout << std::endl; 
     }
 
 
-    // TODO if _C_PLUS_PLUS_14__ (?)
-    //using std::chrono_literals::operator ""s;
-    //using namespace std::chrono_literals;
-    //std::this_thread::sleep_for(10s);
-    // TODO else (C++11)
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
 
@@ -204,8 +202,6 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
     // TODO? or serialize string? / string's buffer? -- string as func argument
     ssize_t bytes_sent = 0, total_bytes_sent = 0; //characters? (unicode?)
     ssize_t msg_ssize = static_cast<ssize_t>(msg_size);
-
-    std::cout << "Sizeof message: " << sizeof message << std::endl;
 
     do
     {
@@ -262,6 +258,11 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
 // exit function:
 // Stack is not unwound - destructors of variables with automatic storage duration are not called. 
 
+// TODOWARY
+// closing connection:
+// SO_LINGER socket option:
+// When enabled, a close(2) or shutdown(2) will not return until all queued messages for the socket have been successfully sent or the linger timeout has been reached. Otherwise, the call returns immediately and the closing is done in the background. When the socket is closed as part of exit(2), it always lingers in the background.
+
 
 // nonblocking accept:
 // If no pending connections are present on the queue, and the socket is not marked as nonblocking, accept() blocks the caller until a connection is present. If the socket is marked nonblocking and no pending connections are present on the queue, accept() fails with the error EAGAIN or EWOULDBLOCK. 
@@ -270,10 +271,10 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
 // accept after SIGIO/select/poll:
 // There may not always be a connection waiting after a SIGIO is delivered or select(2) or poll(2) return a readability event because the connection might have been removed by an asynchronous network error or another thread before accept() is called. If this happens then the call will block waiting for the next connection to arrive. To ensure that accept() never blocks, the passed socket sockfd needs to have the O_NONBLOCK flag set (see socket(7)).
 // explicitly set flags:
-// On Linux, the new socket returned by accept() does not inherit file status flags such as O_NONBLOCK and O_ASYNC from the listening socket. This behavior differs from the canonical BSD sockets implementation. Portable programs should not rely on inheritance or noninheritance of file status flags and always explicitly set all required flags on the socket returned from accept(). 
+// On Linux, the new socket returned by accept() does not inherit file status flags such as O_NONBLOCK and O_ASYNC from the listening socket. This behavior differs from the canonical BSD sockets implementation. Portable programs should not rely on inheritance or noninheritance of file status flags and always explicitly set all required flags on the socket returned from accept().  
 
-// SO_LINGER socket option:
-// When enabled, a close(2) or shutdown(2) will not return until all queued messages for the socket have been successfully sent or the linger timeout has been reached. Otherwise, the call returns immediately and the closing is done in the background. When the socket is closed as part of exit(2), it always lingers in the background. 
+// accept4(sock_fd, &peer_address, &peer_addr_len, SOCK_NONBLOCK | SOCK_CLOEXEC)
+// nonblocking accept, accept4 is a nonstandard Linux extension
 
 // nonblocking recv:
 // If no messages are available at the socket, the receive calls wait for a message to arrive, unless the socket is nonblocking (see fcntl(2)), in which case the value -1 is returned and the external variable errno is set to EAGAIN or EWOULDBLOCK. The receive calls normally return any data available, up to the requested amount, rather than waiting for receipt of the full amount requested.

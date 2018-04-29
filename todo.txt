@@ -7,9 +7,15 @@
 - test recv flags
 
 
+C, Unix:
+- conditional compilation depending on the target platform (Linux, Windows)
+
+
 C++:
 - throw exceptions on errors
     and make a common socket clean-up-point
+
+- conditional compilation depending on the available C++ standard version
 
 
 TESTS:
