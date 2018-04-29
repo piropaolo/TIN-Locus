@@ -32,6 +32,8 @@ const std::size_t MSG_BUF_SIZE = 100;
 // typedef int socklen_t;
 */
 
+void send_message(int socket_fd, const char *message, std::size_t msg_size);
+
 int main(int argc, char** argv)
 {
     // create TCP/IP socket
@@ -40,7 +42,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error creating TCP/IP socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     std::cout << "Socket fd: " << sock_fd << std::endl;
@@ -49,7 +51,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error setting the SO_REUSEADDR socket option\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     // TODO? assert on getsockopt == true?
 
@@ -63,7 +65,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error binding name to the socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     int addr_len = sizeof address;
@@ -71,19 +73,19 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error retrieving socket name\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( addr_len > sizeof address ) // TODO not needed
     {
         std::cerr << "Retrieved local address truncated because of insufficient addr buffer\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( addr_len != sizeof address )
     {
         std::cerr << "Retrieved local address of wrong format\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     std::cout << "Socket bound to local port: " << ntohs(address.sin_port) << '\n' <<
@@ -95,7 +97,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error listening for connections on the socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     int con_sock_fd;
@@ -109,19 +111,19 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error accepting a connection on the socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( peer_addr_len > sizeof peer_address ) // TODO not needed
     {
         std::cerr << "Peer address truncated because of insufficient addr buffer\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( peer_addr_len != sizeof peer_address )
     {
         std::cerr << "Peer address of wrong format\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     // TODOAPP cast the peer address to the appriopriate address structure as known to the communications layer
     // TODOAPP assume only IPv4 formats or also PIv6? IPv4 -- IPv6 connections???
@@ -130,38 +132,17 @@ int main(int argc, char** argv)
 
     std::cout << "Connected peer:\n"
                  "  Remote address: " << inet_ntoa(peer_address.sin_addr) << "\n" <<
-                 "  Remote port:    " << ntohs(peer_address.sin_port) << std::endl;
+                 "  Remote port:    " << ntohs(peer_address.sin_port) << "\n"
+                 "  socket_fd: " << con_sock_fd << std::endl;
     std::cout << std::endl;
 
 
-    char message[] = "Hello. You've just connected to the TestTcp server.";
-                     //"Your client id is " 
-    // TODO? or serialize string? / string's buffer?
-    ssize_t bytes_sent = 0, total_bytes_sent = 0; //characters? (unicode?)
-    ssize_t bytes_to_send = static_cast<ssize_t>(sizeof message);
-    do
-    {
-        if( total_bytes_sent > 0 )
-        {
-            std::cout << "Sending another part of the welcome message.\n"
-                         "Bytes sent: " << total_bytes_sent << "\n" <<
-                         "Total message size: " << bytes_to_send << std::endl;
-        }
-
-        bytes_sent = send(con_sock_fd, message + total_bytes_sent, bytes_to_send - total_bytes_sent, 0); // TODO flags
-        // TODO sendmsg
-        if( bytes_sent < 0 )
-        {
-            std::cerr << "Error sending a message over the accepted connection\n"
-                        "Error: " << std::strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
-        }
-
-        total_bytes_sent += bytes_sent;
-    }
-    while( total_bytes_sent < bytes_to_send );
-    std::cout << "Welcome message sent to the accepted client.\n"
-                 "Bytes sent: " << total_bytes_sent << std::endl;
+    char weclome_message[] = "\n"
+                             "This is a welcome message.\n"
+                             "Hello. You've just connected to the TestTcp server.\n"
+                             "\n";
+                             //"Your client id is " 
+    send_message(con_sock_fd, weclome_message, sizeof weclome_message);
 
 
     char message_buffer[MSG_BUF_SIZE];
@@ -176,7 +157,7 @@ int main(int argc, char** argv)
         {
             std::cerr << "Error receiving a message from the peer\n"
                          "Error: " << std::strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
+            std::exit(EXIT_FAILURE);
         }
         else if( bytes_received == 0 )
         {
@@ -196,7 +177,7 @@ int main(int argc, char** argv)
     //using namespace std::chrono_literals;
     //std::this_thread::sleep_for(10s);
     // TODO else (C++11)
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
 
     // TODO general macros for checking error conditions + throwing exceptions?
@@ -204,17 +185,52 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error closing connected socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( close(sock_fd) != 0 )
     {
         std::cerr << "Error closing listen socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
         // TODO allow script-automated error status code distinction 
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     return EXIT_SUCCESS;
+}
+
+void send_message(int socket_fd, const char *message, std::size_t msg_size)
+{
+    // TODO? memcpy message? - can the message buffer be modified during this function execution?
+    // TODO? or serialize string? / string's buffer? -- string as func argument
+    ssize_t bytes_sent = 0, total_bytes_sent = 0; //characters? (unicode?)
+    ssize_t msg_ssize = static_cast<ssize_t>(msg_size);
+
+    std::cout << "Sizeof message: " << sizeof message << std::endl;
+
+    do
+    {
+        if( total_bytes_sent > 0 )
+        {
+            std::cout << "Sending another part of the message.\n"
+                         "Bytes sent: " << total_bytes_sent << "\n" <<
+                         "Total message size: " << msg_ssize << std::endl;
+        }
+
+        bytes_sent = send(socket_fd, message + total_bytes_sent, msg_ssize - total_bytes_sent, 0); // TODO flags
+        // TODO sendmsg
+        if( bytes_sent < 0 )
+        {
+            std::cerr << "Error sending message on socket_fd: " << socket_fd << ".\n"
+                         "Error: " << std::strerror(errno) << std::endl;
+            // TODO throw exception --> clean-up
+            std::exit(EXIT_FAILURE);
+        }
+
+        total_bytes_sent += bytes_sent;
+    }
+    while( total_bytes_sent < msg_ssize );
+    std::cout << "Message sent on socket_fd: " << socket_fd << "\n"
+                 "Bytes sent: " << total_bytes_sent << std::endl;
 }
 
 // TODO
@@ -241,6 +257,10 @@ int main(int argc, char** argv)
 // TODO
 // C++ chrono clock:
 // The standard recommends that a steady clock is used to measure the duration. If an implementation uses a system clock instead, the wait time may also be sensitive to clock adjustments.
+
+// TODOWARY
+// exit function:
+// Stack is not unwound - destructors of variables with automatic storage duration are not called. 
 
 
 // nonblocking accept:

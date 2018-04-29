@@ -32,7 +32,7 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error creating TCP/IP socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     std::cout << "Socket fd: " << sock_fd << std::endl;
@@ -47,30 +47,31 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error initiating a connection with the remote socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     // automatically bounds the socket to a random free port or to a usable shared port with the local address set to INADDR_ANY (0.0.0.0)
 
     std::cout << "## Connection with the server established ##" << std::endl;
+    
 
     int remote_addr_len = sizeof remote_address;
     if( getpeername(sock_fd, (struct sockaddr *) &remote_address, (socklen_t *) &remote_addr_len) != 0 )
     {
         std::cerr << "Error retrieving peer socket name\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( remote_addr_len > sizeof remote_address ) // TODO not needed
     {
         std::cerr << "Retrieved peer address truncated because of insufficient addr buffer\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( remote_addr_len != sizeof remote_address )
     {
         std::cerr << "Retrieved peer address of wrong format\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     std::cout << "Server:\n"
@@ -86,19 +87,19 @@ int main(int argc, char** argv)
     {
         std::cerr << "Error retrieving local socket name\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( local_addr_len > sizeof local_address ) // TODO not needed
     {
         std::cerr << "Retrieved local address truncated because of insufficient addr buffer\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
     if( local_addr_len != sizeof local_address )
     {
         std::cerr << "Retrieved local address of wrong format\n"
                      /*"Errno: " << errno*/ << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     std::cout << "Local host:\n"
@@ -107,20 +108,93 @@ int main(int argc, char** argv)
     std::cout << std::endl;
 
 
-    std::this_thread::sleep_for(std::chrono::seconds(10));
+    /*
+        std::this_thread::sleep_for(std::chrono::seconds(10));
 
 
-    // SHUT_RD, SHUT_WR, SHUT_RDWR
-    if( shutdown(sock_fd, SHUT_WR) != 0 )
+        // SHUT_RD, SHUT_WR, SHUT_RDWR
+        if( shutdown(sock_fd, SHUT_WR) != 0 )
+        {
+            std::cerr << "Error shuting down transmissions on the local socket\n"
+                        "Error: " << std::strerror(errno) << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+    */
+    /*if( shutdown(sock_fd, SHUT_RDWR) != 0 )
     {
         std::cerr << "Error shuting down transmissions on the local socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
+    std::this_thread::sleep_for(std::chrono::seconds(1));*/
+    /*if( close(sock_fd) != 0 )
+    {
+        std::cerr << "Error closing socket\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        // TODO allow script-automated error status code distinction 
+        std::exit(EXIT_FAILURE);
+    }*/
 
 
     char message_buffer[MSG_BUF_SIZE];
     ssize_t bytes_received = 0;
+    bool whole_msg_received = true; // important, do not change
+
+    do
+    {
+        // in loop? (for 1 message, I mean)
+        bytes_received = recv(sock_fd, message_buffer, MSG_BUF_SIZE, 0);
+
+        if( bytes_received < 0 )
+        {
+            std::cerr << "Error receiving a message from the peer\n"
+                         "Error: " << std::strerror(errno) << std::endl;
+            std::exit(EXIT_FAILURE);
+        }
+        else if( bytes_received == 0 )
+        {
+            std::cout << "# The peer has performed an orderly shutdown." << std::endl;
+            break;
+            //goto CLOSE_SOCKET;
+        }
+        
+        // bytes_received <= MSG_BUF_SIZE
+        if( message_buffer[bytes_received - 1] != '\0' ) // not a complete message yet
+        {
+            whole_msg_received = false;
+            std::cout << bytes_received << " bytes received. Received message part:\n";
+        }
+        else if( !whole_msg_received )
+        {
+            whole_msg_received = true;
+            std::cout << bytes_received << " bytes received. Received message part:\n";
+        }
+        else
+        {
+            whole_msg_received = true;
+            // TODO only reassign buffers with predefined text
+            std::cout << bytes_received << " bytes received. Message:\n";
+        }
+        std::cout << "> ";
+        std::cout.write(message_buffer, bytes_received);
+        std::cout << std::endl; 
+
+        // NOTGOOD/WRONG -- you have to define 'message' at higher level, not on TCP level! There is no such thing as TCP packet at the logic level.
+        // For example you can send 2 'messages' from one end-point to another, and the second end-point cannot distinguish them without looking at the received stream's contents.
+        // In the above example you ougth to perform a linear search for the '\0' character in order to separate the 'messages'.
+        // (In case of variable-length 'messages'. When dealing with fixed-length 'messages', it would be easier.)
+    }
+    while( !whole_msg_received );
+
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+    // SHUT_RD, SHUT_WR, SHUT_RDWR
+    /*if( shutdown(sock_fd, SHUT_WR) != 0 )
+    {
+        std::cerr << "Error shuting down transmissions on the local socket\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        std::exit(EXIT_FAILURE);
+    }*/
 
     while( true )
     {
@@ -131,7 +205,7 @@ int main(int argc, char** argv)
         {
             std::cerr << "Error receiving a message from the peer\n"
                          "Error: " << std::strerror(errno) << std::endl;
-            exit(EXIT_FAILURE);
+            std::exit(EXIT_FAILURE);
         }
         else if( bytes_received == 0 )
         {
@@ -159,7 +233,7 @@ int main(int argc, char** argv)
         std::cerr << "Error closing socket\n"
                      "Error: " << std::strerror(errno) << std::endl;
         // TODO allow script-automated error status code distinction 
-        exit(EXIT_FAILURE);
+        std::exit(EXIT_FAILURE);
     }
 
     return EXIT_SUCCESS;

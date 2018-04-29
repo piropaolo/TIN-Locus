@@ -1,5 +1,3 @@
-- test with smaller receiver's buffer (smaller than the size of message sent from the server)
-
 - change C-style casts to C++ cast operators
 
 - htons
@@ -8,7 +6,11 @@
 
 - test recv flags
 
-- delete socket bind from client (same socket without SO_REUSEADDR problem)
+
+C++:
+- throw exceptions on errors
+    and make a common socket clean-up-point
+
 
 TESTS:
 - kill (sigkil) applications (server, client) at different points of execution
