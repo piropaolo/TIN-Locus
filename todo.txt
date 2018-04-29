@@ -1,0 +1,21 @@
+- test with smaller receiver's buffer (smaller than the size of message sent from the server)
+
+- change C-style casts to C++ cast operators
+
+- htons
+
+- split the code up into functions / modules
+
+- test recv flags
+
+- delete socket bind from client (same socket without SO_REUSEADDR problem)
+
+MAKEFILE:
+- -pthread ? C++11 threads
+- add compiler flags as flags in makefile
+- add linking with libraries (-pthread on Unix) [at the right place of the compile command!]
+
+
+- add -std=c++11 / -std=c++0x
+- -std=c++14
+- -fext-numeric-literals ??
