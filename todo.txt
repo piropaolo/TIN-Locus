@@ -17,11 +17,23 @@ C++:
 
 - conditional compilation depending on the available C++ standard version
 
+- smart pointers with allocation instead of new, delete
+
+
+DYNAMIC MEMORY ALLOCATION:
+- test program for memory leaks using valgrind
+
 
 TESTS:
 - kill (sigkil) applications (server, client) at different points of execution
 
 - e.g. server killed != server performed an orderly shutdown !!
+
+
+TEST SCRIPTS:
+- write bash client-server testing script
+
+- unit testing with mocks
 
 SECURITY:
 - escape special (e.g. console control) characters from client input!

@@ -1,10 +1,10 @@
 all : server client
 
 server : server.o signal_handlers.o
-	g++ -o server server.o signal_handlers.o
+	g++ -o server server.o signal_handlers.o -pthread
 
 server.o : server.cpp signal_handlers.h
-	g++ -c server.cpp -std=c++11
+	g++ -c server.cpp -std=c++11 -pthread
 
 client : client.o signal_handlers.o
 	g++ -o client client.o signal_handlers.o

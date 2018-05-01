@@ -21,6 +21,10 @@ extern "C" {
 #include <chrono>
 // NOTE: for std::literals::chrono_literals C++14 required
 
+extern "C" {
+  #include <pthread.h>  // POSIX threads
+}
+
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -42,6 +46,10 @@ const std::size_t MSG_BUF_SIZE = 100;
 */
 
 void send_message(int socket_fd, const char *message, std::size_t msg_size);
+extern "C" void * thread_routine(void *connection_socket_fd);    // TODO? TODOCHECK C-language linkage?
+
+// TODO hash(?)-map for threads; key = thread_id
+// int thread_exit_status;
 
 int main(int argc, char** argv)
 {
@@ -171,61 +179,39 @@ int main(int argc, char** argv)
                  "  socket_fd: " << con_sock_fd << std::endl;
     std::cout << std::endl;
 
-
-    char weclome_message[] = "\n"
-                             "This is a welcome message.\n"
-                             "Hello. You've just connected to the TestTcp server.\n"
-                             "\n";
-                             //"Your client id is " 
-    send_message(con_sock_fd, weclome_message, sizeof weclome_message);
-
-
-    // shut down the sending part of the full-duplex TCP connection (disallow further transmissions)
-    if( shutdown(sock_fd, SHUT_RD) != 0 )
+    pthread_t thread_id;    // thread handler
+    //int thread_create_result;
+    // TODO thread_routine's arg <- struct/class
+    if( int thread_create_result = pthread_create(&thread_id, NULL /*&attr*/, &thread_routine, (void *) &con_sock_fd) != 0 )
     {
-        std::cerr << "Error shuting down transmissions on the local socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
+        std::cerr << "Error creating new thread\n"
+                     "Error: " << std::strerror(thread_create_result) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
-
-    char message_buffer[MSG_BUF_SIZE];
-    ssize_t bytes_received = 0;
-
-    while( true )
+    // TODO create dedicated thread for joining with the communication threads
+    int thread_join_result;
+    int *thread_exit_status = NULL;
+    if( (thread_join_result = pthread_join(thread_id, (void **) &thread_exit_status)) != 0 )
     {
-        bytes_received = recv(con_sock_fd, message_buffer, MSG_BUF_SIZE, 0);
-
-        if( bytes_received < 0 )
-        {
-            std::cerr << "Error receiving a message from the peer\n"
-                         "Error: " << std::strerror(errno) << std::endl;
-            std::exit(EXIT_FAILURE);
-        }
-        else if( bytes_received == 0 )
-        {
-            std::cout << "# The peer has performed an orderly shutdown." << std::endl;
-            break;
-        }  
-
-        std::cout << bytes_received << " bytes received. Message:\n" <<
-                     "> ";
-        std::cout.write(message_buffer, bytes_received);
-        std::cout << std::endl; 
+        std::cerr << "Error joining with thread of id: " << thread_id << "\n"
+                     "Error: " << std::strerror(thread_join_result) << std::endl;
+        std::exit(EXIT_FAILURE);
     }
+    if( thread_exit_status == PTHREAD_CANCELED ) // TODOTEST !!
+        std::cout << "Thread (id: " << thread_id <<") was canceled\n";
 
+    //std::cout << "After joining thread (id = " << thread_id << "): exit_status = " << *thread_exit_status <<"\n   &exit_status = " << thread_exit_status << std::endl;
+
+    std::cout << "Thread (id: " << thread_id <<") exit code: " << *thread_exit_status << std::endl;
+    // free exit status' memory allocated by joined thread
+    delete thread_exit_status;
 
     std::cout << "--Closing server--" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
 
     // TODO general macros for checking error conditions + throwing exceptions?
-    if( close(con_sock_fd) != 0 )
-    {
-        std::cerr << "Error closing connected socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
     if( close(sock_fd) != 0 )
     {
         std::cerr << "Error closing listen socket\n"
@@ -270,6 +256,76 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
                  "Bytes sent: " << total_bytes_sent << std::endl;
 }
 
+void * thread_routine(void *connection_socket_fd)
+{
+    int sock_fd = *(int *) connection_socket_fd;
+    int *thread_exit_status = new int{0};
+    // NOTE: the joining thread is obliged to free this allocated memory
+
+    char weclome_message[] = "\n"
+                             "This is a welcome message.\n"
+                             "Hello. You've just connected to the TestTcp server.\n"
+                             "\n";
+                             //"Your client id is " 
+    send_message(sock_fd, weclome_message, sizeof weclome_message);
+
+
+    // shut down the sending part of the full-duplex TCP connection (disallow further transmissions)
+    if( shutdown(sock_fd, SHUT_WR) != 0 )
+    {
+        std::cerr << "Error shuting down transmissions on the local socket. Socket_fd: " << sock_fd << "\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        *thread_exit_status = EXIT_FAILURE;
+        pthread_exit((void *) thread_exit_status);
+    }
+
+
+    char message_buffer[MSG_BUF_SIZE];
+    ssize_t bytes_received = 0;
+
+    while( true )
+    {
+        bytes_received = recv(sock_fd, message_buffer, MSG_BUF_SIZE, 0);
+
+        if( bytes_received < 0 )
+        {
+            std::cerr << "Error receiving a message from the peer. Socket_fd: " << sock_fd << "\n"
+                         "Error: " << std::strerror(errno) << std::endl;
+            *thread_exit_status = EXIT_FAILURE;
+            pthread_exit((void *) thread_exit_status);
+        }
+        else if( bytes_received == 0 )
+        {
+            std::cout << "# The peer has performed an orderly shutdown. Socket_fd: " << sock_fd << std::endl;
+            break;
+        }  
+
+        std::cout << "Socket_fd: " << sock_fd << ". " <<
+                     bytes_received << " bytes received. Message:\n" <<
+                     "> ";
+        std::cout.write(message_buffer, bytes_received);
+        std::cout << std::endl; 
+    }
+
+
+    std::cout << "--Exiting thread for socket_fd: " << sock_fd << "--" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+
+
+    // TODO general macros for checking error conditions + throwing exceptions?
+    if( close(sock_fd) != 0 )
+    {
+        std::cerr << "Error closing socket. Socket_fd: " << sock_fd << "\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        *thread_exit_status = EXIT_FAILURE;
+        pthread_exit((void *) thread_exit_status);
+    }
+
+    //std::cout << "Inside thread (id = " << pthread_self() << "): exit_status = " << *thread_exit_status <<"\n   &exit_status = " << thread_exit_status << std::endl;
+
+    return (void *) thread_exit_status;
+}
+
 
 // TODO
 // SO_REUSEADDR flag:
@@ -304,6 +360,41 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
 // closing connection:
 // SO_LINGER socket option:
 // When enabled, a close(2) or shutdown(2) will not return until all queued messages for the socket have been successfully sent or the linger timeout has been reached. Otherwise, the call returns immediately and the closing is done in the background. When the socket is closed as part of exit(2), it always lingers in the background.
+
+// TODOWARY, TODOTHREAD
+// inet_ntoa
+// strerror
+// strsignal
+// are not thread-safe functions (cannot be safely called from multiple threads at the same time)
+
+// TODOTHREAD
+// thread terminates when:
+// Any of the threads in the process calls exit(3), or the main thread performs a return from main(). This causes the termination of all threads in the process.
+
+// TODOTHREAD
+// main thread:
+// To allow other threads to continue execution, the main thread should terminate by calling pthread_exit() rather than exit(3).
+// BUGS: 
+// Currently, there are limitations in the kernel implementation logic for wait(2)ing on a stopped thread group with a dead thread group leader. This can manifest in problems such as a locked terminal if a stop signal is sent to a foreground process whose thread group leader has already called pthread_exit(). 
+
+// TODOTHREAD
+// pthread_exit:
+// Performing a return from the start function of any thread other than the main thread results in an implicit call to pthread_exit(), using the function's return value as the thread's exit status.
+
+// TODOTHREAD
+// thread join:
+// If multiple threads simultaneously try to join with the same thread, the results are undefined. If the thread calling pthread_join() is canceled, then the target thread will remain joinable (i.e., it will not be detached).
+// After a successful call to pthread_join(), the caller is guaranteed that the target thread has terminated.
+// Joining with a thread that has previously been joined results in undefined behavior.
+// Failure to join with a thread that is joinable (i.e., one that is not detached), produces a "zombie thread". Avoid doing this, since each zombie thread consumes some system resources, and when enough zombie threads have accumulated, it will no longer be possible to create new threads (or processes).
+// There is no pthreads analog of waitpid(-1, &status, 0), that is, "join with any terminated thread". If you believe you need this functionality, you probably need to rethink your application design.
+// All of the threads in a process are peers: any thread can join with any other thread in the process. 
+
+// TODOWARY, TODOTHREAD
+// thread id:
+// POSIX.1 allows an implementation wide freedom in choosing the type used to represent a thread ID; for example, representation using either an arithmetic type or a structure is permitted. Therefore, variables of type pthread_t can't portably be compared using the C equality operator (==); use pthread_equal(3) instead.
+// Thread identifiers should be considered opaque: any attempt to use a thread ID other than in pthreads calls is nonportable and can lead to unspecified results.
+// The thread ID returned by pthread_self() is not the same thing as the kernel thread ID returned by a call to gettid(2).
 
 
 // nonblocking accept:
