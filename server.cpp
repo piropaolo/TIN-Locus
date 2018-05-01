@@ -1,13 +1,20 @@
-// TODO define's for including C-style headers? (calling conventions?)
-#include <sys/types.h>
-#include <sys/socket.h>
+extern "C" { // avoid C++ name mangling; in fact not needed (over-protective?) as these are system libraries with use in C++ code in mind (no doubt)
+  #include <sys/types.h>
+  #include <sys/socket.h>
+}
 
 // htons function
-#include <arpa/inet.h> // TODO?? (alternative, instead)
-#include <netinet/in.h>
+extern "C" {
+  #include <arpa/inet.h> // TODO?? (alternative, instead)
+  #include <netinet/in.h>
+}
 
 #include <cerrno>
-#include <unistd.h>
+extern "C" {
+  #include <unistd.h> // standard symbolic constants and types (e.g. STDOUT_FILENO)
+}
+
+#include <csignal>
 
 // NOTE: C++11 required
 #include <thread>
@@ -18,6 +25,8 @@
 #include <cstring>
 #include <iostream>
 
+#include "signal_handlers.h"
+
 const uint16_t LISTEN_PORT = 9999;
 const int BACKLOG_SIZE = 5;
 
@@ -25,7 +34,7 @@ const int SOCKET_OPTION_ON = 1;
 
 const std::size_t MSG_BUF_SIZE = 100;
 
-// TODO define special, non-standard types if lacking on build platform
+// TODO? define special, non-standard types if lacking on build platform
 /*#ifndef socklen_t
 #define socklen_t int
 #endif
@@ -36,6 +45,37 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size);
 
 int main(int argc, char** argv)
 {
+    // Install signal handlers
+    // The signals SIGKILL and SIGSTOP cannot be caught, blocked, or ignored.
+    if( std::signal(SIGINT, signal_handler) == SIG_ERR ) // terminal interrupt signal, ctrl + c
+    {
+        // Setting a signal handler can be disabled on some implementations.
+        std::cerr << "Error installing the SIGINT signal handler\n"
+                     /*<< "Error: " << std::strerror(errno)*/;
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGTERM, signal_handler) == SIG_ERR ) // termination request
+    {
+        std::cerr << "Error installing the SIGTERM signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGQUIT, signal_handler) == SIG_ERR ) // terminal quit signal, ctrl + backslash
+    {
+        std::cerr << "Error installing the SIGQUIT signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGTSTP, signal_handler) == SIG_ERR ) // terminal stop signal, ctrl + z
+    {
+        std::cerr << "Error installing the SIGTSTP signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGCONT, signal_handler) == SIG_ERR ) // continue executing, if stopped
+    {
+        std::cerr << "Error installing the SIGCONT signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+
+
     // create TCP/IP socket
     int sock_fd = socket(AF_INET, SOCK_STREAM /*| SOCK_NONBLOCK | SOCK_CLOEXEC*/, 0 /*IPPROTO_TCP*/);
     if( sock_fd < 0 )
@@ -175,6 +215,7 @@ int main(int argc, char** argv)
     }
 
 
+    std::cout << "--Closing server--" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
 
@@ -228,6 +269,7 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
     std::cout << "Message sent on socket_fd: " << socket_fd << "\n"
                  "Bytes sent: " << total_bytes_sent << std::endl;
 }
+
 
 // TODO
 // SO_REUSEADDR flag:

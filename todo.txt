@@ -24,13 +24,15 @@ TESTS:
 - e.g. server killed != server performed an orderly shutdown !!
 
 SECURITY:
-
+- escape special (e.g. console control) characters from client input!
 
 
 MAKEFILE:
 - -pthread ? C++11 threads
 - add compiler flags as flags in makefile
 - add linking with libraries (-pthread on Unix) [at the right place of the compile command!]
+
+- should recompilation of server and client depend on changes in signal_handlers.h?
 
 
 - add -std=c++11 / -std=c++0x

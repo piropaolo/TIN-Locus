@@ -9,6 +9,8 @@
 #include <cerrno>
 #include <unistd.h>
 
+#include <csignal>
+
 // NOTE: C++11 required
 #include <thread>
 #include <chrono>
@@ -16,6 +18,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
+
+#include "signal_handlers.h"
 
 const uint16_t PORT = 55555;
 
@@ -28,6 +32,37 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size);
 
 int main(int argc, char** argv)
 {
+    // Install signal handlers
+    // The signals SIGKILL and SIGSTOP cannot be caught, blocked, or ignored.
+    if( std::signal(SIGINT, signal_handler) == SIG_ERR ) // terminal interrupt signal, ctrl + c
+    {
+        // Setting a signal handler can be disabled on some implementations.
+        std::cerr << "Error installing the SIGINT signal handler\n"
+                     /*<< "Error: " << std::strerror(errno)*/;
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGTERM, signal_handler) == SIG_ERR ) // termination request
+    {
+        std::cerr << "Error installing the SIGTERM signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGQUIT, signal_handler) == SIG_ERR ) // terminal quit signal, ctrl + backslash
+    {
+        std::cerr << "Error installing the SIGQUIT signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGTSTP, signal_handler) == SIG_ERR ) // terminal stop signal, ctrl + z
+    {
+        std::cerr << "Error installing the SIGTSTP signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+    if( std::signal(SIGCONT, signal_handler) == SIG_ERR ) // continue executing, if stopped
+    {
+        std::cerr << "Error installing the SIGCONT signal handler\n";
+        std::exit(EXIT_FAILURE);
+    }
+
+
     // create TCP/IP socket
     int sock_fd = socket(AF_INET, SOCK_STREAM /*| SOCK_NONBLOCK | SOCK_CLOEXEC*/, 0 /*IPPROTO_TCP*/);
     if( sock_fd < 0 )
@@ -134,7 +169,7 @@ int main(int argc, char** argv)
         std::cout << bytes_received << " bytes received. Message:\n" <<
                      "> ";
         std::cout.write(message_buffer, bytes_received);
-        std::cout << std::endl; 
+        std::cout << std::endl;
     }
     while( message_buffer[bytes_received - 1] != '\0' ); // not a complete message yet
     // bytes_received <= MSG_BUF_SIZE
@@ -151,23 +186,50 @@ int main(int argc, char** argv)
 
     std::streamsize characters_read;
     std::cout << std::boolalpha;
-    while( std::cin.getline(message_buffer, MSG_BUF_SIZE) ) // delimiter = '\n'
+
+    while( std::cin.get(message_buffer, MSG_BUF_SIZE) ) // delimiter = '\n'
     {
         characters_read = std::cin.gcount();    // count of characters typed in (visible characters + terminating NULL)
                                                 // characters_read is always >= 1 (if only the delim character found in the input - the string will consist of only the NULL character)
-        characters_read -= 1;                   // do not send the terminating NULL character
-        std::cout << "Read: " << characters_read << std::endl;   
-        std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
-        std::cout << "Cin fail: " << std::cin.fail() << std::endl;
-        /*if( characters_read == 1 )              // if only delim char as input - do not send
-            continue;*/
+
+
+
+        std::cout << "Read: " << characters_read << std::endl;
+
         if( characters_read > 0 )
             send_message(sock_fd, message_buffer, characters_read);
-    }
-    // EOF character (Ctrl + D) terminates the input loop
-    /*std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
-    std::cout << "Cin fail: " << std::cin.fail() << std::endl;*/
+        // with terminating '\0' => characters_read + 1
 
+        if( std::cin.eof() )
+            break;
+        else if( characters_read < MSG_BUF_SIZE-1 )
+            std::cin.get(); // extract and discard the delim char
+    }
+    // EOF character (Ctrl + D) or empty line terminates the input loop
+    std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
+    std::cout << "Cin fail: " << std::cin.fail() << std::endl;
+
+//    while( std::cin.getline(message_buffer, MSG_BUF_SIZE) ) // delimiter = '\n'
+//    {
+//        characters_read = std::cin.gcount();    // count of characters typed in (visible characters + terminating NULL)
+//                                                // characters_read is always >= 1 (if only the delim character found in the input - the string will consist of only the NULL character)
+//        // TODOCHECK check the contents of buffer when only '\n' as input
+//        characters_read -= 1;                   // do not send the terminating NULL character
+//        std::cout << "Read: " << characters_read << std::endl;
+//        /*if( characters_read == 1 )              // if only delim char as input - do not send
+//            continue;*/
+//        if( characters_read > 0 )
+//            send_message(sock_fd, message_buffer, characters_read);
+//    }
+//    // EOF character (Ctrl + D) or message exceeding the message_buffer's size terminates the input loop
+//    std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
+//    std::cout << "Cin fail: " << std::cin.fail() << std::endl;
+
+    // std::cin.getline : if count-1 characters have been extracted, setstate(failbit) is executed (this ends the loop); delimiter is extracted and counted towards gcount() but is not stored
+    // std::cin.get : delimiter is not extracted; ends extracting when count-1 chars have been stored / eof occured / the next available char equals delim; if no chars were extracted, calls setstate(failbit) (this ends the loop)
+
+    std::cout << "--Closing client--" << std::endl;
+    std::this_thread::sleep_for(std::chrono::seconds(1));
 
 //CLOSE_SOCKET:
     if( close(sock_fd) != 0 )
@@ -195,7 +257,10 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
                          "Total message size: " << msg_ssize << std::endl;
         }
 
+        std::cout << "DBG: will send" << std::endl;
         bytes_sent = send(socket_fd, message + total_bytes_sent, msg_ssize - total_bytes_sent, 0);
+        // NOTE: Successful completion of a call to send() does not guarantee delivery of the message. A return value of -1 indicates only locally-detected errors. 
+        std::cout << "DBG: sent (maybe)" << std::endl;
 
         if( bytes_sent < 0 )
         {
