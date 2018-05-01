@@ -1,14 +1,14 @@
 #include "Colour.h"
 
-#if !defined(PLATFORM_WINDOWS) && (defined(WIN32) || defined(__WIN32__) || defined(_WIN32) || defined(_MSC_VER))
-#define PLATFORM_WINDOWS
+#if !defined(LOG_PLATFORM_WINDOWS) && (defined(WIN32) || defined(__WIN32__) || defined(_WIN32) || defined(_MSC_VER))
+#define LOG_PLATFORM_WINDOWS
 #include <Windows.h>
 #endif
 
 #include <sstream>
 
-#ifndef CONFIG_TERMINAL_COLORS
-#define CONFIG_TERMINAL_COLORS true
+#ifndef LOG_CONFIG_TERMINAL_COLORS
+#define LOG_CONFIG_TERMINAL_COLORS true
 #endif
 
 namespace log {
@@ -32,16 +32,16 @@ namespace {
 } // end anon namespace
 } // end log namespace
 
-#if !defined( CONFIG_COLOUR_NONE ) && !defined( CONFIG_COLOUR_WINDOWS ) && !defined( CONFIG_COLOUR_ANSI )
-#   ifdef PLATFORM_WINDOWS
-#       define CONFIG_COLOUR_WINDOWS
+#if !defined( LOG_CONFIG_COLOUR_NONE ) && !defined( LOG_CONFIG_COLOUR_WINDOWS ) && !defined( LOG_CONFIG_COLOUR_ANSI )
+#   ifdef LOG_PLATFORM_WINDOWS
+#       define LOG_CONFIG_COLOUR_WINDOWS
 #   else
-#       define CONFIG_COLOUR_ANSI
+#       define LOG_CONFIG_COLOUR_ANSI
 #   endif
 #endif
 
 
-#if defined ( CONFIG_COLOUR_WINDOWS ) /////////////////////////////////////////
+#if defined ( LOG_CONFIG_COLOUR_WINDOWS ) /////////////////////////////////////////
 
 namespace log {
 namespace {
@@ -89,7 +89,7 @@ namespace {
 
     IColourImpl* platformColourInstance() {
         static Win32ColourImpl s_instance;
-        return CONFIG_TERMINAL_COLORS
+        return LOG_CONFIG_TERMINAL_COLORS
             ? &s_instance
             : NoColourImpl::instance();
     }
@@ -97,7 +97,7 @@ namespace {
 } // end anon namespace
 } // end log namespace
 
-#elif defined( CONFIG_COLOUR_ANSI ) //////////////////////////////////////
+#elif defined( LOG_CONFIG_COLOUR_ANSI ) //////////////////////////////////////
 
 namespace log {
 namespace {
@@ -151,7 +151,7 @@ namespace {
     };
 
     IColourImpl *platformColourInstance() {
-        return CONFIG_TERMINAL_COLORS
+        return LOG_CONFIG_TERMINAL_COLORS
                ? PosixColourImpl::instance()
                : NoColourImpl::instance();
     }

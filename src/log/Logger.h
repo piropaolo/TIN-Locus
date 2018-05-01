@@ -23,6 +23,7 @@ namespace log {
         void logError(std::string error);
         void logDebug(std::string debug);
 
+        void setOutputStream(std::ostream *output);
         void setShouldShowDebug(bool shouldShowDebug);
 
     private:

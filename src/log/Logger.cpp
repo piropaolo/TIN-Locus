@@ -11,7 +11,7 @@ namespace log {
         auto time = std::chrono::system_clock::now();
         std::time_t timeT = std::chrono::system_clock::to_time_t(time);
 
-        *output << "LOG: " << std::ctime(&timeT) << " " << message << std::endl;
+        *output << "LOG: " << std::ctime(&timeT) << "  " << message << std::endl;
     }
 
     void Logger::logError(std::string error) {
@@ -20,7 +20,7 @@ namespace log {
         auto time = std::chrono::system_clock::now();
         std::time_t timeT = std::chrono::system_clock::to_time_t(time);
 
-        *output << Colour(Colour::Error) << "ERROR: " << std::ctime(&timeT) << " " << error
+        *output << Colour(Colour::Error) << "ERROR: " << std::ctime(&timeT) << "  " << error
                 << Colour(Colour::White) << std::endl;
     }
 
@@ -33,12 +33,16 @@ namespace log {
         auto time = std::chrono::system_clock::now();
         std::time_t timeT = std::chrono::system_clock::to_time_t(time);
 
-        *output << Colour(Colour::Warning) << "DEBUG: " << std::ctime(&timeT) << " " << debug
+        *output << Colour(Colour::Warning) << "DEBUG: " << std::ctime(&timeT) << "  " << debug
                 << Colour(Colour::White) << std::endl;
     }
 
     void Logger::setShouldShowDebug(bool shouldShowDebug) {
         Logger::shouldShowDebug = shouldShowDebug;
+    }
+
+    void Logger::setOutputStream(std::ostream *output) {
+        Logger::output = output;
     }
 
 } // end log namespace
