@@ -7,6 +7,15 @@
 - test recv flags
 
 
+COMMUNICATION THREADS:
+- close socket file descriptor on error before exiting (perform clean-up)
+
+
+ACCEPT WHILE-LOOP:
+- continue to next iteration on connection error
+- exit on major errors
+
+
 C, Unix:
 - conditional compilation depending on the target platform (Linux, Windows)
 

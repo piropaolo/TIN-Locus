@@ -29,6 +29,8 @@ const uint16_t REMOTE_SRV_PORT = 9999;
 const std::size_t MSG_BUF_SIZE = 100;
 
 void send_message(int socket_fd, const char *message, std::size_t msg_size);
+void close_socket_in_thread(int socket_fd);
+extern "C" void * reading_thread_routine(void *socket_fd);
 
 int main(int argc, char** argv)
 {
@@ -162,8 +164,8 @@ int main(int argc, char** argv)
         else if( bytes_received == 0 )
         {
             std::cout << "# The peer has performed an orderly shutdown." << std::endl;
-            break;
-            //goto CLOSE_SOCKET;
+            //break;
+            goto CLOSE_SOCKET;
         }      
 
         std::cout << bytes_received << " bytes received. Message:\n" <<
@@ -175,11 +177,37 @@ int main(int argc, char** argv)
     // bytes_received <= MSG_BUF_SIZE
 
 
-    // shut down the receiving part of the full-duplex TCP connection (disallow further receptions from the peer)
-    if( shutdown(sock_fd, SHUT_RD) != 0 )
+    pthread_t reading_thread_id;
+    pthread_attr_t thread_attributes;
+    int thread_op_result;
+
+    if( (thread_op_result = pthread_attr_init(&thread_attributes)) != 0 )
     {
-        std::cerr << "Error shuting down transmissions on the local socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
+        std::cerr << "Error initializing thread attributes object\n"
+                    "Error: " << std::strerror(thread_op_result) << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    // create thread in detached state
+    if( (thread_op_result = pthread_attr_setdetachstate(&thread_attributes, PTHREAD_CREATE_DETACHED)) != 0 )
+    {
+        std::cerr << "Error setting the detach state attribute in thread attributes object\n"
+                    "Error: " << std::strerror(thread_op_result) << std::endl;
+        std::exit(EXIT_FAILURE);
+    }
+
+    if( (thread_op_result = pthread_create(&reading_thread_id, &thread_attributes, &reading_thread_routine, (void *) &sock_fd)) != 0 )
+    {
+        std::cerr << "Error creating new thread\n"
+                    "Error: " << std::strerror(thread_op_result) << std::endl;
+        std::exit(EXIT_FAILURE);
+        // TODO? display message and continue; ?
+    }
+
+    if( (thread_op_result = pthread_attr_destroy(&thread_attributes)) != 0 )
+    {
+        std::cerr << "Error destroying thread attributes object\n"
+                     "Error: " << std::strerror(thread_op_result) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -189,10 +217,7 @@ int main(int argc, char** argv)
 
     while( std::cin.get(message_buffer, MSG_BUF_SIZE) ) // delimiter = '\n'
     {
-        characters_read = std::cin.gcount();    // count of characters typed in (visible characters + terminating NULL)
-                                                // characters_read is always >= 1 (if only the delim character found in the input - the string will consist of only the NULL character)
-
-
+        characters_read = std::cin.gcount();    // count of characters typed in
 
         std::cout << "Read: " << characters_read << std::endl;
 
@@ -202,36 +227,21 @@ int main(int argc, char** argv)
 
         if( std::cin.eof() )
             break;
-        else if( characters_read < MSG_BUF_SIZE-1 )
-            std::cin.get(); // extract and discard the delim char
+        while( std::cin.peek() == '\n' )
+        {
+            std::cout << "$$peekuje" << std::endl;
+            std::cin.get(); // extract and discard the delim chars
+        }
     }
-    // EOF character (Ctrl + D) or empty line terminates the input loop
+    // EOF character (Ctrl + D) terminates the input loop
     std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
     std::cout << "Cin fail: " << std::cin.fail() << std::endl;
 
-//    while( std::cin.getline(message_buffer, MSG_BUF_SIZE) ) // delimiter = '\n'
-//    {
-//        characters_read = std::cin.gcount();    // count of characters typed in (visible characters + terminating NULL)
-//                                                // characters_read is always >= 1 (if only the delim character found in the input - the string will consist of only the NULL character)
-//        // TODOCHECK check the contents of buffer when only '\n' as input
-//        characters_read -= 1;                   // do not send the terminating NULL character
-//        std::cout << "Read: " << characters_read << std::endl;
-//        /*if( characters_read == 1 )              // if only delim char as input - do not send
-//            continue;*/
-//        if( characters_read > 0 )
-//            send_message(sock_fd, message_buffer, characters_read);
-//    }
-//    // EOF character (Ctrl + D) or message exceeding the message_buffer's size terminates the input loop
-//    std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
-//    std::cout << "Cin fail: " << std::cin.fail() << std::endl;
-
-    // std::cin.getline : if count-1 characters have been extracted, setstate(failbit) is executed (this ends the loop); delimiter is extracted and counted towards gcount() but is not stored
-    // std::cin.get : delimiter is not extracted; ends extracting when count-1 chars have been stored / eof occured / the next available char equals delim; if no chars were extracted, calls setstate(failbit) (this ends the loop)
 
     std::cout << "--Closing client--" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-//CLOSE_SOCKET:
+CLOSE_SOCKET:
     if( close(sock_fd) != 0 )
     {
         std::cerr << "Error closing socket\n"
@@ -274,6 +284,62 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
     while( total_bytes_sent < msg_ssize );
     std::cout << "Message sent on socket_fd: " << socket_fd << "\n"
                  "Bytes sent: " << total_bytes_sent << std::endl;
+}
+
+void close_socket_in_thread(int socket_fd)
+{
+    std::cout << "--Exiting thread for socket_fd: " << socket_fd << "--" << std::endl;
+
+    // TODO general macros for checking error conditions + throwing exceptions?
+    if( close(socket_fd) != 0 )
+    {
+        std::cerr << "Error closing socket. Socket_fd: " << socket_fd << "\n"
+                     "Error: " << std::strerror(errno) << std::endl;
+        pthread_exit((void *) NULL);
+
+        // TODO or:
+        //throw std::system_error(errno, std::generic_category());
+    }
+}
+
+void * reading_thread_routine(void *socket_fd)
+{
+    int sock_fd = *(int *) socket_fd;
+
+    char message_buffer[MSG_BUF_SIZE];
+    ssize_t bytes_received = 0;
+
+    while( true )
+    {
+        bytes_received = recv(sock_fd, message_buffer, MSG_BUF_SIZE, 0);
+
+        if( bytes_received < 0 )
+        {
+            std::cerr << "Error receiving a message from the peer. Socket_fd: " << sock_fd << "\n"
+                         "Error: " << std::strerror(errno) << std::endl;
+            //close_socket_in_thread(sock_fd);
+            // TODO? stop the main thread from sending (break the sending loop) (at some error codes?)
+            std::cin.setstate(std::ios_base::eofbit); // TODO signal to interrupt std::cin.get ?
+            pthread_exit((void *) NULL);
+        }
+        else if( bytes_received == 0 )
+        {
+            std::cout << "# The peer has performed an orderly shutdown. Socket_fd: " << sock_fd << std::endl;
+            // TODO stop the main thread from sending (break the sending loop)
+            std::cin.setstate(std::ios_base::eofbit); // TODO signal to interrupt std::cin.get ?
+            break;
+        }  
+
+        std::cout << "Socket_fd: " << sock_fd << ". " <<
+                     bytes_received << " bytes received. Message:\n" <<
+                     "> ";
+        std::cout.write(message_buffer, bytes_received);
+        std::cout << std::endl;
+    }
+
+    //close_socket_in_thread(sock_fd);
+
+    return (void *) NULL;
 }
 
 // TODO
