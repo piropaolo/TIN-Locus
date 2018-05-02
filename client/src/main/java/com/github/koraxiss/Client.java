@@ -1,23 +1,14 @@
 package com.github.koraxiss;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.Socket;
 
 public class Client {
-    Socket socket;
-    DataInputStream input;
-    DataOutputStream output;
+    private static byte[] buffer = new byte[100];
     private Thread readerThread;
     private Thread writerThread;
     private boolean running;
 
     public Client() throws IOException {
-        socket = new Socket("google.com", 80);
-        input = new DataInputStream(socket.getInputStream());
-        output = new DataOutputStream(socket.getOutputStream());
-
         readerThread = new Thread(new ReaderThread());
         writerThread = new Thread(new WriterThread());
         running = true;
@@ -25,8 +16,8 @@ public class Client {
     }
 
     public void start() {
-        readerThread.start();
         writerThread.start();
+        readerThread.start();
     }
 
     public void stop() {
@@ -39,13 +30,15 @@ public class Client {
 
         @Override
         public void run() {
-            while (running) {
-                try {
+            try {
+                while (running) {
                     Thread.sleep(3000);
-                } catch (InterruptedException e) {
-                    System.out.println("Reader thread interrupted");
-                    e.printStackTrace();
                 }
+            } catch (InterruptedException e) {
+                System.out.println("Reader thread interrupted");
+                e.printStackTrace();
+            } finally {
+
             }
         }
     }
@@ -54,14 +47,21 @@ public class Client {
 
         @Override
         public void run() {
-            while (running) {
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    System.out.println("Writer thread interrupted");
-                    e.printStackTrace();
+            try {
+                while (running) {
+                    Thread.sleep(100);
                 }
+            } catch (InterruptedException e) {
+                System.out.println("Writer thread interrupted");
+                e.printStackTrace();
+            } finally {
+
             }
         }
     }
+
+    public static byte[] getBuffer() {
+        return buffer;
+    }
 }
+
