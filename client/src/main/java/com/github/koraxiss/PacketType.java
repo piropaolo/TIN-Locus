@@ -32,22 +32,22 @@ public enum PacketType {
         map.put(0, PacketType._OPEN);
         map.put(1, PacketType._CLOSE);
 
-        map.put(2, PacketType._OPEN_ENCR);
-        map.put(3, PacketType._PUBLIC_KEY);
-        map.put(4, PacketType._SYMMETRIC_KEY);
-        map.put(5, PacketType._TEST_KEY);
+        map.put(8, PacketType._OPEN_ENCR);
+        map.put(9, PacketType._PUBLIC_KEY);
+        map.put(10, PacketType._SYMMETRIC_KEY);
+        map.put(11, PacketType._TEST_KEY);
 
-        map.put(6, PacketType._OPEN_PROT);
-        map.put(7, PacketType._SET_NAME);
-        map.put(8, PacketType._ADD_CLIENT);
-        map.put(9, PacketType._NEW_CLIENT);
-        map.put(10, PacketType._REMOVE_CLIENT);
-        map.put(11, PacketType._REMOVE_MY_CLIENT);
+        map.put(16, PacketType._OPEN_PROT);
+        map.put(17, PacketType._SET_NAME);
+        map.put(18, PacketType._ADD_CLIENT);
+        map.put(19, PacketType._NEW_CLIENT);
+        map.put(20, PacketType._REMOVE_CLIENT);
+        map.put(21, PacketType._REMOVE_MY_CLIENT);
         map.put(12, PacketType._MY_LOCATION);
         map.put(13, PacketType._LOCATION);
-        map.put(14, PacketType._ACK_OK);
-        map.put(15, PacketType._ACK_ERR);
-        map.put(16, PacketType._ALIVE);
+        map.put(2, PacketType._ACK_OK);
+        map.put(3, PacketType._ACK_ERR);
+        map.put(4, PacketType._ALIVE);
 
         packetTypeMap = Collections.unmodifiableMap(map);
     }
