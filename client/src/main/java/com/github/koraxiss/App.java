@@ -14,7 +14,7 @@ public class App
         try {
             Client client = new Client();
             Thread.sleep(1000);
-            client.stop();;
+//            client.stop();;
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
