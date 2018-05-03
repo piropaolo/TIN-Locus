@@ -1,4 +1,4 @@
-all : server client
+all : server test_client
 
 server : server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o
 	g++ -o server server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o -pthread
@@ -22,14 +22,14 @@ ClientManager.o : ClientManager.cpp ClientManager.h SocketEndpoint.h BlockingMes
 	g++ -c ClientManager.cpp -std=c++14 -pthread
 
 
-client : client.o signal_handlers.o
-	g++ -o client client.o signal_handlers.o -pthread
+test_client : test_client.o signal_handlers.o
+	g++ -o test_client test_client.o signal_handlers.o -pthread
 
-client.o : client.cpp
-	g++ -c client.cpp -std=c++11 -pthread
+test_client.o : test_client.cpp
+	g++ -c test_client.cpp -std=c++11 -pthread
 
 
 clean :
 	rm -f server server.o
-	rm -f client client.o
+	rm -f test_client test_client.o
 	rm -f signal_handlers.o SocketEndpoint.o BlockingMessageQueue.o ClientManager.o SessionManager.o

@@ -1,6 +1,4 @@
-//#include "SocketEndpoint.h"
-
-extern "C" { // avoid C++ name mangling; in fact not needed (over-protective?) as these are system libraries with use in C++ code in mind (no doubt)
+extern "C" {
   #include <sys/types.h>
   #include <sys/socket.h>
 
@@ -24,30 +22,23 @@ extern "C" { // avoid C++ name mangling; in fact not needed (over-protective?) a
 namespace comm_layer
 {
     CommSocketEndpoint::CommSocketEndpoint(const int socket_fd) : socket_fd_(socket_fd), socket_open_(true)
-    {
-        std::cout << "--CommSocketEndpoint.ctor: socket_fd: " << socket_fd_ << "--" << std::endl;
-    }
+    {}
 
     CommSocketEndpoint::~CommSocketEndpoint()   // TODOWARY, TODOCHECK, TODO RAII may not work with threads (pthread_exit will not cause destructors to be called, ?)
     {
-        // TODOCHECK check whether this works with threads
+        // TODOCHECK check whether this works with threads in 100% situations
         if( socket_open_ )
         {
-            std::cout << "--CommSocketEndpoint.dtor: Exiting thread for socket_fd: " << socket_fd_ << "--" << std::endl;
-
             // TODO general macros for checking error conditions + throwing exceptions?
             if( ::close(socket_fd_) != 0 )
             {
                 std::cerr << "Error closing socket. Socket_fd: " << socket_fd_ << "\n"
                              "Error: " << std::strerror(errno) << std::endl;
-                //pthread_exit((void *) NULL);
 
                 throw std::system_error(errno, std::generic_category());
             }
 
             socket_open_ = false;
-
-            std::cout << "-CommSocketEndpoint.dtor: Communication socket closed-" << std::endl;
         }
     }
 
@@ -121,36 +112,30 @@ namespace comm_layer
             std::cout << "# The peer has performed an orderly shutdown. Socket_fd: " << socket_fd_ << std::endl;
             // TODO throw exception (connection shutdown/closed)
 
-            //throw std::system_error(errno, std::generic_category());
+            // NOT: throw std::system_error(errno, std::generic_category());
         }  
 
         return static_cast<int>(bytes_received);
     }
 
-    // explicitly end the communication (close connection)
+    // explicitly terminate the communication (close connection)
     void CommSocketEndpoint::close()
     {
         if( socket_open_ )
         {
-            std::cout << "--CommSocketEndpoint.close: Exiting thread for socket_fd: " << socket_fd_ << "--" << std::endl;
-
-            // TODO general macros for checking error conditions + throwing exceptions?
             if( ::close(socket_fd_) != 0 )
             {
                 std::cerr << "Error closing socket. Socket_fd: " << socket_fd_ << "\n"
                              "Error: " << std::strerror(errno) << std::endl;
-                //pthread_exit((void *) NULL);
 
                 throw std::system_error(errno, std::generic_category());
             }
 
             socket_open_ = false;
-
-            std::cout << "-CommSocketEndpoint.close: Communication socket closed-" << std::endl;
         }
     }
 
-    // TODO, TODOC++ handle errors in a nice way; exceptions?
+    // TODO, TODOC++ handle errors in a nice way; exceptions are teh powarrr!!!!
     ListenSocketEndpoint::ListenSocketEndpoint(const uint16_t port_number)
     {
         // create TCP/IP socket
@@ -163,8 +148,6 @@ namespace comm_layer
         }
 
         socket_fd_ = socket_fd;
-
-        std::cout << "Socket fd: " << socket_fd_ << std::endl;
 
         const int SOCKET_OPTION_ON = 1;
         if( setsockopt(socket_fd_, SOL_SOCKET, SO_REUSEADDR, (const void *) &SOCKET_OPTION_ON, sizeof SOCKET_OPTION_ON) != 0 )
@@ -202,7 +185,6 @@ namespace comm_layer
 
     ListenSocketEndpoint::~ListenSocketEndpoint()
     {
-        // TODO general macros for checking error conditions + throwing exceptions?
         // TODO? check if the fd was open? (socket created)
         if( ::close(socket_fd_) != 0 )
         {
@@ -215,6 +197,7 @@ namespace comm_layer
         std::cout << "Listen socket closed" << std::endl;
     }
 
+    // TODO return some object, Goddammit!
     /*CommSocketEndpoint*/ int ListenSocketEndpoint::acceptPendingConnection() const
     {
         struct sockaddr_in peer_address;
@@ -237,7 +220,7 @@ namespace comm_layer
             // TODO close socket and continue;
         }        
 
-        // TODO move to ConnSocketEndpoint (getPeerAddress)
+        // TODO move to ConnSocketEndpoint.getPeerAddress
         std::cout << "Connected peer:\n"
                     "  Remote address: " << inet_ntoa(peer_address.sin_addr) << "\n" <<
                     "  Remote port:    " << ntohs(peer_address.sin_port) << "\n"
@@ -247,6 +230,7 @@ namespace comm_layer
         return con_sock_fd; // TODO return (reference to) (newly allocated and created) ConnSocketEndpoint
     }
 
+    // temporary solution; should return some structure
     void ListenSocketEndpoint::printSocketEndpointAddress() const
     {
         struct sockaddr_in address;

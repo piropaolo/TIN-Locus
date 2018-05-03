@@ -11,11 +11,9 @@ extern "C" {
 
 #include <cstring>
 
-//#define LISTEN_TCP_SOCKET_BACKLOG_SIZE 5
-
 namespace comm_layer
 {
-    //using sockaddr_in = struct sockaddr_in; // TODO? create a simpler structure
+    //using sockaddr_in = struct sockaddr_in; // TODO? create a simpler structure?
 
     class CommSocketEndpoint
     {
@@ -29,11 +27,11 @@ namespace comm_layer
           ~CommSocketEndpoint();
 
           // TODO? subclasses Sender, Receiver ? -- one for each thread (SenderThread, ReceiverThread)
-          // TODO which thread should close the connection?
-          // can sending and receiving be done simultaneously on one socket? (yup)
+          // TODO which thread should close the connection when server initiates knock-off time (end-of-work)?
+          // can sending and receiving be done simultaneously on one socket? Yup, idgit ¬_¬
 
           // TODO? throw specifications?
-          // TODO in every method check if socket_open_
+          // TODO in every method check if socket_open_ (?)
           void sendNBytes(const char *message, std::size_t message_size) const; // TODO? const void *message
           void receiveNBytes(char *buffer, std::size_t buffer_size) const;
 
@@ -70,6 +68,7 @@ namespace comm_layer
           // TODO configurable socket options -- pass structure SocketConfig to ctor / to static class member function (to set for following created sockets)?
 
           //sockaddr_in& getSocketEndpointAddress() const; // TODO use automatic memory alloc and free with smart pointers
+          // temporary substitute, meh ¬_¬
           void printSocketEndpointAddress() const;
 
           // TODO

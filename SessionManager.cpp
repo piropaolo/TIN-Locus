@@ -12,7 +12,7 @@ namespace clients
     SessionManager::~SessionManager()
     {}
 
-    void SessionManager::addClient(/*const*/ client_ptr &client_ptr)
+    void SessionManager::addClient(client_ptr &client_ptr)
     {
         clients_.push_back( std::move(client_ptr) );
     }

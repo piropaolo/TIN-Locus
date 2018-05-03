@@ -11,8 +11,6 @@ extern "C" {
 
 #include <memory>
 
-//class comm_layer::CommSocketEndpoint;
-
 namespace clients
 {
     namespace internals
@@ -28,12 +26,13 @@ namespace clients
     class ClientManager
     {
         private:
-          // TODO temp
+          // TODO temporary solution
           static int client_id_counter_;
-          // TODO
+          // TODO int?
           int client_id_;
           /*comm_layer::CommSocketEndpoint comm_endpoint_;*/
           std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr_;
+
           // TODO? lazy creation (in startFullDuplexComm, not in ctor) ?
           threads_layer::BlockingMessageQueue message_queue_;
 
@@ -52,15 +51,15 @@ namespace clients
 
           void cancel_sender_thread(); // TODO rename: stop_sender_thread
 
-          friend /*extern "C"*/ void * internals::receiver_thread_routine_wrapper(void *comm_manager);
+          friend void * internals::receiver_thread_routine_wrapper(void *comm_manager);
           friend void * internals::sender_thread_routine_wrapper(void *comm_manager);
           friend void internals::sender_thread_cleanup_handler(void *comm_manager);
 
         public:
           // TODO add base class CommEndpoint
           /*ClientManager(const comm_layer::CommSocketEndpoint &comm_endpoint);*/
-          ClientManager(/*const*/ std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr);
-          ~ClientManager()/* = default*/;
+          ClientManager(std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr);
+          ~ClientManager();
 
           // start full-duplex communication with the client (async)
           void startFullDuplexComm();
@@ -69,11 +68,10 @@ namespace clients
 
           // send message to all the peers in the current session
           void sendToPeersInSession(const messages::Message &message) const;
+
           void sendToAllInSession(const messages::Message &message) const;
 
           // remove Client from the (global ? singleton ?) SessionManager
-          // SessionManager should also have such method
-          // TODO? something different?
           void removeClient() const;
           bool operator==(const ClientManager &other_client) const;
           bool operator!=(const ClientManager &other_client) const;

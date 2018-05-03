@@ -1,4 +1,3 @@
-// TODO define's for including C-style headers? (calling conventions?)
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -74,8 +73,6 @@ int main(int argc, char** argv)
         std::exit(EXIT_FAILURE);
     }
 
-    std::cout << "Socket fd: " << sock_fd << std::endl;
-
 
     struct sockaddr_in remote_address;
     remote_address.sin_family = AF_INET;
@@ -118,7 +115,6 @@ int main(int argc, char** argv)
                  "  Remote port: " << ntohs(remote_address.sin_port) << std::endl;
 
 
-    // TODOAPP change for client
     struct sockaddr_in local_address;
     int local_addr_len = sizeof local_address;
 
@@ -165,7 +161,7 @@ int main(int argc, char** argv)
         {
             std::cout << "# The peer has performed an orderly shutdown." << std::endl;
             //break;
-            goto CLOSE_SOCKET;
+            goto CLOSE_SOCKET; // yup, intentional ( ͡° ͜ʖ ͡°)
         }      
 
         std::cout << bytes_received << " bytes received. Message:\n" <<
@@ -201,7 +197,6 @@ int main(int argc, char** argv)
         std::cerr << "Error creating new thread\n"
                      "Error: " << std::strerror(thread_op_result) << std::endl;
         std::exit(EXIT_FAILURE);
-        // TODO? display message and continue; ?
     }
 
     if( (thread_op_result = pthread_attr_destroy(&thread_attributes)) != 0 )
@@ -222,8 +217,6 @@ int main(int argc, char** argv)
     {
         characters_read = std::cin.gcount();    // count of characters typed in
 
-        std::cout << "Read: " << characters_read << std::endl;
-
         if( characters_read > 0 )
             send_message(sock_fd, message_buffer, characters_read);
         // with terminating '\0' => characters_read + 1
@@ -232,13 +225,10 @@ int main(int argc, char** argv)
             break;
         while( std::cin.peek() == '\n' )
         {
-            //DBG std::cout << "$$peekuje" << std::endl;
             std::cin.get(); // extract and discard the delim chars
         }
     }
     // EOF character (Ctrl + D) or empty first line terminates the input loop
-    std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
-    std::cout << "Cin fail: " << std::cin.fail() << std::endl;
 
 
     std::cout << "--Closing client--" << std::endl;
@@ -265,15 +255,13 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
     {
         if( total_bytes_sent > 0 )
         {
-            std::cout << "Sending another part of the message.\n"
+            /*std::cout << "Sending another part of the message.\n"
                          "Bytes sent: " << total_bytes_sent << "\n" <<
-                         "Total message size: " << msg_ssize << std::endl;
+                         "Total message size: " << msg_ssize << std::endl;*/
         }
 
-        //DBG std::cout << "DBG: will send" << std::endl;
         bytes_sent = send(socket_fd, message + total_bytes_sent, msg_ssize - total_bytes_sent, 0);
         // NOTE: Successful completion of a call to send() does not guarantee delivery of the message. A return value of -1 indicates only locally-detected errors. 
-        //DBG std::cout << "DBG: sent (maybe)" << std::endl;
 
         if( bytes_sent < 0 )
         {
@@ -285,14 +273,11 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
         total_bytes_sent += bytes_sent;
     }
     while( total_bytes_sent < msg_ssize );
-    std::cout << "Message sent on socket_fd: " << socket_fd << "\n"
-                 "Bytes sent: " << total_bytes_sent << std::endl;
+    std::cout << "Bytes sent: " << total_bytes_sent << std::endl;
 }
 
 void close_socket_in_thread(int socket_fd)
 {
-    std::cout << "--Exiting thread for socket_fd: " << socket_fd << "--" << std::endl;
-
     // TODO general macros for checking error conditions + throwing exceptions?
     if( close(socket_fd) != 0 )
     {
@@ -318,23 +303,22 @@ void * reading_thread_routine(void *socket_fd)
 
         if( bytes_received < 0 )
         {
-            std::cerr << "Error receiving a message from the peer. Socket_fd: " << sock_fd << "\n"
+            std::cerr << "Error receiving a message from the peer.\n"
                          "Error: " << std::strerror(errno) << std::endl;
             //close_socket_in_thread(sock_fd);
-            // TODO? stop the main thread from sending (break the sending loop) (at some error codes?)
+            // stop the main thread from sending (break the sending loop) (at some error codes?)
             std::cin.setstate(std::ios_base::eofbit); // TODO signal to interrupt std::cin.get ?
             pthread_exit((void *) NULL);
         }
         else if( bytes_received == 0 )
         {
-            std::cout << "# The peer has performed an orderly shutdown. Socket_fd: " << sock_fd << std::endl;
+            std::cout << "# The peer has performed an orderly shutdown." << std::endl;
             // TODO stop the main thread from sending (break the sending loop)
             std::cin.setstate(std::ios_base::eofbit); // TODO signal to interrupt std::cin.get ?
             break;
         }  
 
-        std::cout << "Socket_fd: " << sock_fd << ". " <<
-                     bytes_received << " bytes received. Message:\n" <<
+        std::cout << bytes_received << " bytes received. Message:\n" <<
                      "> ";
         std::cout.write(message_buffer, bytes_received);
         std::cout << std::endl;
@@ -345,6 +329,6 @@ void * reading_thread_routine(void *socket_fd)
     return (void *) NULL;
 }
 
-// TODO
+// NOTES:
 // recv:
 // If a message is too long to fit in the supplied buffer, excess bytes may be discarded depending on the type of socket the message is received from. 

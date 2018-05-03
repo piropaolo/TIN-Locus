@@ -2,12 +2,6 @@
 #define SESSION_MANAGER_H
 
 #include "ClientManager.h"
-/* ? (declaration)
-namespace clients
-{
-    class ClientManager;
-}
-*/
 
 #include <list>
 #include <memory> // std::make_unique (needs C++14), std::unique_ptr
@@ -34,9 +28,9 @@ namespace clients
           SessionManager();
           ~SessionManager();
 
-          // arg: unique_ptr ?
+          // arg: unique_ptr&& ?
           //void addClient(const ClientManager &client);
-          void addClient(/*const*/ client_ptr &client_ptr);
+          void addClient(client_ptr &client_ptr);
           // arg: int clientId ?
           void removeClient(const ClientManager &client);
 
