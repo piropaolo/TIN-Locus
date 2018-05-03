@@ -22,7 +22,7 @@ public class EncryptedMessenger implements Messenger {
     public void send(Packet packet) throws IOException {
         byte[] buffer = packet.getBuffer();
         send(buffer, 0, 1);
-        send(buffer, 1, packet.getSize() - 1);
+        send(buffer, 1, buffer.length - 1);
     }
 
     public Packet receive() throws IOException {
