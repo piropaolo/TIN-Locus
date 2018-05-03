@@ -31,7 +31,7 @@ public class SimpleMessenger implements Messenger {
     }
 
     public void send(Packet packet) throws IOException {
-        send(packet.getBuffer(), 0, packet.getSize());
+        send(packet.getBuffer(), 0, packet.getBuffer().length);
     }
 
     public Packet receive() throws IOException {

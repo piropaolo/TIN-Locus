@@ -19,7 +19,7 @@ public class ProtocolMessenger implements Messenger {
 
     public void send(Packet packet) throws IOException {
         byte[] buffer = packet.getBuffer();
-        send(buffer, 0, packet.getSize());
+        send(buffer, 0, buffer.length);
     }
 
     public Packet receive() throws IOException {
