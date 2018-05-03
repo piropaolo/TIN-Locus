@@ -2,10 +2,10 @@ package com.github.koraxiss;
 
 import java.io.IOException;
 
-public class EncryptedMessenger {
-    SimpleMessenger simpleMessenger;
+public class EncryptedMessenger implements Messenger {
+    Messenger simpleMessenger;
 
-    public EncryptedMessenger(SimpleMessenger simpleMessenger) {
+    public EncryptedMessenger(Messenger simpleMessenger) {
         this.simpleMessenger = simpleMessenger;
     }
 
