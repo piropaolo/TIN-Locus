@@ -1,15 +1,7 @@
 extern "C" { // avoid C++ name mangling; in fact not needed (over-protective?) as these are system libraries with use in C++ code in mind (no doubt)
   #include <sys/types.h>
-  #include <sys/socket.h>
 }
 
-// htons function
-extern "C" {
-  #include <arpa/inet.h> // TODO?? (alternative, instead)
-  #include <netinet/in.h>
-}
-
-#include <cerrno>
 extern "C" {
   #include <unistd.h> // standard symbolic constants and types (e.g. STDOUT_FILENO)
 }
@@ -21,23 +13,22 @@ extern "C" {
 #include <chrono>
 // NOTE: for std::literals::chrono_literals C++14 required
 
-extern "C" {
-  #include <pthread.h>  // POSIX threads
-}
-
 // NOTE: C++11 required
-#include <system_error>
+//#include <system_error>
 
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 
+// TODO temp
+#include <list>
+#include <memory> // std::make_unique (needs C++14), std::unique_ptr
+
 #include "signal_handlers.h"
+#include "SocketEndpoint.h"
+#include "ClientManager.h"
 
 const uint16_t LISTEN_PORT = 9999;
-const int BACKLOG_SIZE = 5;
-
-const int SOCKET_OPTION_ON = 1;
 
 const std::size_t MSG_BUF_SIZE = 100;
 
@@ -48,7 +39,6 @@ const std::size_t MSG_BUF_SIZE = 100;
 // typedef int socklen_t;
 */
 
-void send_message(int socket_fd, const char *message, std::size_t msg_size);
 void close_socket_in_thread(int socket_fd);
 extern "C" void * thread_routine(void *connection_socket_fd);    // TODO? TODOCHECK C-language linkage?
 
@@ -87,261 +77,33 @@ int main(int argc, char** argv)
         std::exit(EXIT_FAILURE);
     }
 
-
-    // create TCP/IP socket
-    int sock_fd = socket(AF_INET, SOCK_STREAM /*| SOCK_NONBLOCK | SOCK_CLOEXEC*/, 0 /*IPPROTO_TCP*/);
-    if( sock_fd < 0 )
-    {
-        std::cerr << "Error creating TCP/IP socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "Socket fd: " << sock_fd << std::endl;
-
-    if( setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (const void *) &SOCKET_OPTION_ON, sizeof SOCKET_OPTION_ON) != 0 )
-    {
-        std::cerr << "Error setting the SO_REUSEADDR socket option\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-    // TODO? assert on getsockopt == true?
-
-
-    struct sockaddr_in address;
-    address.sin_family = AF_INET;
-    address.sin_port = htons(LISTEN_PORT);
-    address.sin_addr.s_addr = htonl(INADDR_ANY);   // bind to all local interfaces
-
-    if( bind(sock_fd, (struct sockaddr *) &address, sizeof address) != 0 )
-    {
-        std::cerr << "Error binding name to the socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    int addr_len = sizeof address;
-    if( getsockname(sock_fd, (struct sockaddr *) &address, (socklen_t *) &addr_len) != 0 )
-    {
-        std::cerr << "Error retrieving socket name\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-    if( addr_len > sizeof address ) // TODO not needed
-    {
-        std::cerr << "Retrieved local address truncated because of insufficient addr buffer\n"
-                     /*"Errno: " << errno*/ << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-    if( addr_len != sizeof address )
-    {
-        std::cerr << "Retrieved local address of wrong format\n"
-                     /*"Errno: " << errno*/ << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    std::cout << "Socket bound to local port: " << ntohs(address.sin_port) << '\n' <<
-                 "Local address: " << inet_ntoa(address.sin_addr) << std::endl;
-    std::cout << std::endl;
-
-
-    if( listen(sock_fd, BACKLOG_SIZE) != 0 )
-    {
-        std::cerr << "Error listening for connections on the socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
+    comm_layer::ListenSocketEndpoint listenSocketEndpoint(LISTEN_PORT);
+    listenSocketEndpoint.printSocketEndpointAddress();
 
     int con_sock_fd;
-    struct sockaddr_in peer_address;
-    int peer_addr_len = sizeof peer_address;
 
-    pthread_t thread_id;    // thread handler
-    pthread_attr_t thread_attributes;
-    int thread_op_result;
-
-    if( (thread_op_result = pthread_attr_init(&thread_attributes)) != 0 )
-    {
-        std::cerr << "Error initializing thread attributes object\n"
-                    "Error: " << std::strerror(thread_op_result) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
-    // create thread in detached state
-    if( (thread_op_result = pthread_attr_setdetachstate(&thread_attributes, PTHREAD_CREATE_DETACHED)) != 0 )
-    {
-        std::cerr << "Error setting the detach state attribute in thread attributes object\n"
-                    "Error: " << std::strerror(thread_op_result) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
+    // TODO temporary; temporarily here
+    std::list< std::unique_ptr< clients::ClientManager > > clients;
 
     while( true )
     {
-        con_sock_fd = accept(sock_fd, (struct sockaddr *) &peer_address, (socklen_t *) &peer_addr_len);
-
-        if( con_sock_fd < 0 )
-        {
-            std::cerr << "Error accepting a connection on the socket\n"
-                        "Error: " << std::strerror(errno) << std::endl;
-            std::exit(EXIT_FAILURE);
-            // TODO display message and continue;
-        }
-        if( peer_addr_len != sizeof peer_address )
-        {
-            std::cerr << "Peer address of wrong format\n"
-                        /*"Errno: " << errno*/ << std::endl;
-            std::exit(EXIT_FAILURE);
-            // TODO close socket and continue;
-        }
+        con_sock_fd = listenSocketEndpoint.acceptPendingConnection();
         
-
-        std::cout << "Connected peer:\n"
-                    "  Remote address: " << inet_ntoa(peer_address.sin_addr) << "\n" <<
-                    "  Remote port:    " << ntohs(peer_address.sin_port) << "\n"
-                    "  socket_fd: " << con_sock_fd << std::endl;
-        std::cout << std::endl;
-
-        // TODO thread_routine's arg <- struct/class
-        if( (thread_op_result = pthread_create(&thread_id, &thread_attributes, &thread_routine, (void *) &con_sock_fd)) != 0 )
-        {
-            std::cerr << "Error creating new thread\n"
-                        "Error: " << std::strerror(thread_op_result) << std::endl;
-            std::exit(EXIT_FAILURE);
-            // TODO? display message and continue; ?
-        }
+        // TODO need new (alloc)
+        //comm_layer::CommSocketEndpoint commEndpoint(con_sock_fd);
+        
+        // TODO cannot pass CommEndpoint by const reference, because close() method is not const !!
+        clients.push_back( std::make_unique< clients::ClientManager >( std::make_unique< comm_layer::CommSocketEndpoint >(con_sock_fd) ) );
+        // TODO does removing/poping call dtor of the element?
+        // TODO dtor of the element shall free the allocated memory -> std::unique_ptr
+        clients.back()->startFullDuplexComm();
     }
-
-
-    if( (thread_op_result = pthread_attr_destroy(&thread_attributes)) != 0 )
-    {
-        std::cerr << "Error destroying thread attributes object\n"
-                     "Error: " << std::strerror(thread_op_result) << std::endl;
-        std::exit(EXIT_FAILURE);
-    }
-
+    
+    // TODO now it's never reached:
     std::cout << "--Closing server--" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-
-    // TODO general macros for checking error conditions + throwing exceptions?
-    if( close(sock_fd) != 0 )
-    {
-        std::cerr << "Error closing listen socket\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        // TODO allow script-automated error status code distinction 
-        std::exit(EXIT_FAILURE);
-    }
-
     return EXIT_SUCCESS;
-}
-
-void send_message(int socket_fd, const char *message, std::size_t msg_size)
-{
-    // TODO? memcpy message? - can the message buffer be modified during this function execution?
-    // TODO? or serialize string? / string's buffer? -- string as func argument
-    ssize_t bytes_sent = 0, total_bytes_sent = 0; //characters? (unicode?)
-    ssize_t msg_ssize = static_cast<ssize_t>(msg_size);
-
-    do
-    {
-        bytes_sent = send(socket_fd, message + total_bytes_sent, msg_ssize - total_bytes_sent, 0);
-
-        if( bytes_sent < 0 )
-        {
-            // throw error condition that corresponds to the POSIX errno code
-            throw std::system_error(errno, std::generic_category());
-        }
-
-        total_bytes_sent += bytes_sent;
-    }
-    while( total_bytes_sent < msg_ssize );
-    std::cout << "Bytes send: " << total_bytes_sent << std::endl;
-}
-
-void close_socket_in_thread(int socket_fd)
-{
-    std::cout << "--Exiting thread for socket_fd: " << socket_fd << "--" << std::endl;
-
-    // TODO general macros for checking error conditions + throwing exceptions?
-    if( close(socket_fd) != 0 )
-    {
-        std::cerr << "Error closing socket. Socket_fd: " << socket_fd << "\n"
-                     "Error: " << std::strerror(errno) << std::endl;
-        pthread_exit((void *) NULL);
-
-        // TODO or:
-        //throw std::system_error(errno, std::generic_category());
-    }
-}
-
-// TODO? pthread_cleanup handlers for closing socket
-void * thread_routine(void *connection_socket_fd)
-{
-    int sock_fd = *(int *) connection_socket_fd;
-
-    char weclome_message[] = "\n"
-                             "This is a welcome message.\n"
-                             "Hello. You've just connected to the TestTcp server.\n"
-                             "\n";
-                             //"Your client id is " 
-    try
-    {
-        send_message(sock_fd, weclome_message, sizeof weclome_message);
-    }
-    catch( const std::system_error &ex )
-    {
-        std::cerr << "Error sending a message. Socket_fd: " << sock_fd << "\n"
-                     "Error: " << ex.code().message() << std::endl;
-        // TODO test error codes:
-        // (EAGAIN or EWOULDBLOCK), ECONNRESET, (EINTR), EPIPE, EACCES, EIO, ENETDOWN, ENETUNREACH
-        close_socket_in_thread(sock_fd);
-        pthread_exit((void *) NULL);
-    }
-
-
-    char message_buffer[MSG_BUF_SIZE];
-    ssize_t bytes_received = 0;
-
-    while( true )
-    {
-        bytes_received = recv(sock_fd, message_buffer, MSG_BUF_SIZE, 0);
-
-        if( bytes_received < 0 )
-        {
-            std::cerr << "Error receiving a message from the peer. Socket_fd: " << sock_fd << "\n"
-                         "Error: " << std::strerror(errno) << std::endl;
-            close_socket_in_thread(sock_fd);
-            pthread_exit((void *) NULL);
-        }
-        else if( bytes_received == 0 )
-        {
-            std::cout << "# The peer has performed an orderly shutdown. Socket_fd: " << sock_fd << std::endl;
-            break;
-        }  
-
-        std::cout << "Socket_fd: " << sock_fd << ". " <<
-                     bytes_received << " bytes received. Message:\n" <<
-                     "> ";
-        std::cout.write(message_buffer, bytes_received);
-        std::cout << std::endl;
-
-        // echo received message to the client
-        try
-        {
-            send_message(sock_fd, message_buffer, bytes_received);
-        }
-        catch( const std::system_error &ex )
-        {
-            std::cerr << "Error sending a message. Socket_fd: " << sock_fd << "\n"
-                        "Error: " << ex.code().message() << std::endl;
-            close_socket_in_thread(sock_fd);
-            pthread_exit((void *) NULL);
-        }
-    }
-
-    close_socket_in_thread(sock_fd);
-
-    return (void *) NULL;
 }
 
 
@@ -426,6 +188,9 @@ void * thread_routine(void *connection_socket_fd)
 // POSIX.1 allows an implementation wide freedom in choosing the type used to represent a thread ID; for example, representation using either an arithmetic type or a structure is permitted. Therefore, variables of type pthread_t can't portably be compared using the C equality operator (==); use pthread_equal(3) instead.
 // Thread identifiers should be considered opaque: any attempt to use a thread ID other than in pthreads calls is nonportable and can lead to unspecified results.
 // The thread ID returned by pthread_self() is not the same thing as the kernel thread ID returned by a call to gettid(2).
+
+// TODOSYNC, TODOSIGNAL, TODOCHECK
+// If a signal is delivered to a thread waiting for a mutex, upon return from the signal handler the thread shall resume waiting for the mutex as if it was not interrupted.
 
 
 // nonblocking accept:

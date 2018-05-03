@@ -184,7 +184,7 @@ int main(int argc, char** argv)
     if( (thread_op_result = pthread_attr_init(&thread_attributes)) != 0 )
     {
         std::cerr << "Error initializing thread attributes object\n"
-                    "Error: " << std::strerror(thread_op_result) << std::endl;
+                     "Error: " << std::strerror(thread_op_result) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
@@ -192,14 +192,14 @@ int main(int argc, char** argv)
     if( (thread_op_result = pthread_attr_setdetachstate(&thread_attributes, PTHREAD_CREATE_DETACHED)) != 0 )
     {
         std::cerr << "Error setting the detach state attribute in thread attributes object\n"
-                    "Error: " << std::strerror(thread_op_result) << std::endl;
+                     "Error: " << std::strerror(thread_op_result) << std::endl;
         std::exit(EXIT_FAILURE);
     }
 
     if( (thread_op_result = pthread_create(&reading_thread_id, &thread_attributes, &reading_thread_routine, (void *) &sock_fd)) != 0 )
     {
         std::cerr << "Error creating new thread\n"
-                    "Error: " << std::strerror(thread_op_result) << std::endl;
+                     "Error: " << std::strerror(thread_op_result) << std::endl;
         std::exit(EXIT_FAILURE);
         // TODO? display message and continue; ?
     }
@@ -211,6 +211,9 @@ int main(int argc, char** argv)
         std::exit(EXIT_FAILURE);
     }
 
+
+    std::cout << "--You can now write messages to the server--\n"
+                 "--EOF character (Ctrl + D) or empty first line terminates the input loop--" << std::endl;
 
     std::streamsize characters_read;
     std::cout << std::boolalpha;
@@ -229,11 +232,11 @@ int main(int argc, char** argv)
             break;
         while( std::cin.peek() == '\n' )
         {
-            std::cout << "$$peekuje" << std::endl;
+            //DBG std::cout << "$$peekuje" << std::endl;
             std::cin.get(); // extract and discard the delim chars
         }
     }
-    // EOF character (Ctrl + D) terminates the input loop
+    // EOF character (Ctrl + D) or empty first line terminates the input loop
     std::cout << "Cin eof:  " << std::cin.eof() << std::endl;
     std::cout << "Cin fail: " << std::cin.fail() << std::endl;
 
@@ -267,10 +270,10 @@ void send_message(int socket_fd, const char *message, std::size_t msg_size)
                          "Total message size: " << msg_ssize << std::endl;
         }
 
-        std::cout << "DBG: will send" << std::endl;
+        //DBG std::cout << "DBG: will send" << std::endl;
         bytes_sent = send(socket_fd, message + total_bytes_sent, msg_ssize - total_bytes_sent, 0);
         // NOTE: Successful completion of a call to send() does not guarantee delivery of the message. A return value of -1 indicates only locally-detected errors. 
-        std::cout << "DBG: sent (maybe)" << std::endl;
+        //DBG std::cout << "DBG: sent (maybe)" << std::endl;
 
         if( bytes_sent < 0 )
         {

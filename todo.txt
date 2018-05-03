@@ -7,6 +7,10 @@
 - test recv flags
 
 
+CONSOLE ARGUMENTS:
+- add server listening port as a commandline argument
+
+
 COMMUNICATION THREADS:
 - close socket file descriptor on error before exiting (perform clean-up)
 
@@ -28,15 +32,25 @@ C++:
 
 - smart pointers with allocation instead of new, delete
 
+- TEST, CHECK const references as function arguments. Can such objects call non-const member functions? 
+
 
 DYNAMIC MEMORY ALLOCATION:
 - test program for memory leaks using valgrind
+
+
+SIGNALS:
+- clean-up when catched SIGINT (?) (call dtors, close, ...)
 
 
 TESTS:
 - kill (sigkil) applications (server, client) at different points of execution
 
 - e.g. server killed != server performed an orderly shutdown !!
+
+
+UNIT TESTS:
+- BlockingMessageQueue
 
 
 TEST SCRIPTS:
