@@ -10,9 +10,9 @@ public class SimpleMessenger implements Messenger {
     private InputStream input;
     private OutputStream output;
 
-    public SimpleMessenger() {
+    public SimpleMessenger(String host, int port) {
         try {
-            socket = new Socket("127.0.0.1", 8080);
+            socket = new Socket(host, port);
             input = socket.getInputStream();
             output = socket.getOutputStream();
         } catch (IOException e) {
@@ -42,6 +42,12 @@ public class SimpleMessenger implements Messenger {
                 return new Packet(PacketType._OPEN);
             case _CLOSE:
                 return new Packet(PacketType._CLOSE);
+            case _ACK_ERR:
+                return new Packet(PacketType._ACK_ERR);
+            case _ACK_OK:
+                return new Packet(PacketType._ACK_OK);
+            case _ALIVE:
+                return new Packet(PacketType._ALIVE);
             default:
                 return null;
         }
