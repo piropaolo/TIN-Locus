@@ -15,10 +15,10 @@ public enum PacketType {
 
     _OPEN_PROT,
     _SET_NAME,
-    _ADD_CLIENT,
-    _NEW_CLIENT,
-    _REMOVE_CLIENT,
-    _REMOVE_MY_CLIENT,
+    _ADD_FOLLOWER,
+    _NEW_FOLLOWED,
+    _REMOVE_FOLLOWER,
+    _REMOVE_FOLLOWED,
     _MY_LOCATION,
     _LOCATION,
     _ACK_OK,
@@ -26,6 +26,7 @@ public enum PacketType {
     _ALIVE;
 
     public static Map<Integer, PacketType> packetTypeMap = new HashMap<>();
+    public static Map<PacketType, Integer> reversedMap = new HashMap<>();
 
     static {
         Map<Integer, PacketType> map = new HashMap<>();
@@ -39,10 +40,10 @@ public enum PacketType {
 
         map.put(16, PacketType._OPEN_PROT);
         map.put(17, PacketType._SET_NAME);
-        map.put(18, PacketType._ADD_CLIENT);
-        map.put(19, PacketType._NEW_CLIENT);
-        map.put(20, PacketType._REMOVE_CLIENT);
-        map.put(21, PacketType._REMOVE_MY_CLIENT);
+        map.put(18, PacketType._ADD_FOLLOWER);
+        map.put(19, PacketType._NEW_FOLLOWED);
+        map.put(20, PacketType._REMOVE_FOLLOWER);
+        map.put(21, PacketType._REMOVE_FOLLOWED);
         map.put(12, PacketType._MY_LOCATION);
         map.put(13, PacketType._LOCATION);
         map.put(2, PacketType._ACK_OK);
@@ -50,5 +51,8 @@ public enum PacketType {
         map.put(4, PacketType._ALIVE);
 
         packetTypeMap = Collections.unmodifiableMap(map);
+
+        for(Integer i: packetTypeMap.keySet())
+            reversedMap.put(packetTypeMap.get(i), i);
     }
 }

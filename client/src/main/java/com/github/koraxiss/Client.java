@@ -3,7 +3,6 @@ package com.github.koraxiss;
 import java.io.IOException;
 
 public class Client {
-    private static byte[] buffer = new byte[100];
     private Thread readerThread;
     private Thread writerThread;
     private boolean running;
@@ -58,10 +57,6 @@ public class Client {
 
             }
         }
-    }
-
-    public static byte[] getBuffer() {
-        return buffer;
     }
 }
 

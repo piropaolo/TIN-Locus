@@ -1,8 +1,6 @@
 package com.github.koraxiss;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.Socket;
 
 public class SimpleMessenger implements Messenger {
@@ -20,6 +18,10 @@ public class SimpleMessenger implements Messenger {
         }
     }
 
+    public SimpleMessenger(InputStream input) {
+        this.input = input;
+    }
+
     public void send(byte[] buffer, int offset, int n) throws IOException {
         output.write(buffer, offset, n);
     }
@@ -33,7 +35,7 @@ public class SimpleMessenger implements Messenger {
     }
 
     public Packet receive() throws IOException {
-        byte[] buffer = Client.getBuffer();
+        byte[] buffer = new byte[100];
         receive(buffer, 0, 1);
         int type = buffer[0];
         PacketType packetType = PacketType.packetTypeMap.get(type);
