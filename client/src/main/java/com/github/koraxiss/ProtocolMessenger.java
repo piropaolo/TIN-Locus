@@ -2,10 +2,10 @@ package com.github.koraxiss;
 
 import java.io.IOException;
 
-public class ProtocolMessenger {
-    EncryptedMessenger encryptedMessenger;
+public class ProtocolMessenger implements Messenger {
+    Messenger encryptedMessenger;
 
-    public ProtocolMessenger(EncryptedMessenger encryptedMessenger) {
+    public ProtocolMessenger(Messenger encryptedMessenger) {
         this.encryptedMessenger = encryptedMessenger;
     }
 
