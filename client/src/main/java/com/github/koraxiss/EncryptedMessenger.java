@@ -32,13 +32,18 @@ public class EncryptedMessenger implements Messenger {
         PacketType packetType = PacketType.packetTypeMap.get(type);
         switch (packetType) {
             case _OPEN_ENCR:
+                return new Packet(PacketType._OPEN_ENCR);
             case _PUBLIC_KEY:
             case _SYMMETRIC_KEY:
             case _TEST_KEY:
             case _ACK_ERR:
+                return new Packet(PacketType._ACK_ERR);
             case _ACK_OK:
+                return new Packet(PacketType._ACK_OK);
             case _CLOSE:
+                return new Packet(PacketType._CLOSE);
             case _ALIVE:
+                return new Packet(PacketType._ALIVE);
             default:
                 return null;
         }

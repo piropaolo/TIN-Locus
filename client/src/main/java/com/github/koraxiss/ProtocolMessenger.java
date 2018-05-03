@@ -29,6 +29,7 @@ public class ProtocolMessenger implements Messenger {
         PacketType packetType = PacketType.packetTypeMap.get(type);
         switch (packetType) {
             case _OPEN_PROT:
+                return new Packet(PacketType._OPEN_PROT);
             case _SET_NAME:
             case _ADD_CLIENT:
             case _NEW_CLIENT:
@@ -37,9 +38,13 @@ public class ProtocolMessenger implements Messenger {
             case _MY_LOCATION:
             case _LOCATION:
             case _ACK_ERR:
+                return new Packet(PacketType._ACK_ERR);
             case _ACK_OK:
-            case _ALIVE:
+                return new Packet(PacketType._ACK_OK);
             case _CLOSE:
+                return new Packet(PacketType._CLOSE);
+            case _ALIVE:
+                return new Packet(PacketType._ALIVE);
             default:
                 return null;
         }
