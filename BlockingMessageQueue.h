@@ -9,6 +9,7 @@ extern "C" {
 
 #include <queue>
 
+// TODO move Message to another header file!
 namespace messages
 {
     struct Message
@@ -21,7 +22,22 @@ namespace messages
         /*explicit*/ Message(const Message &message);
         /*Message& operator=(const Message &message);*/
         ~Message()/* = default*/;   // TODO? automatic buffer alloc?
+
+        // TODO? Visitor pattern ?
+        //void send(const CommEndpoint &commEndpoint);
+        // or: interface for CommEndpoint (Sender)
+        // (void send(Sender))
+        // TODO? + if special message type -> do something special (e.g. throw exception to stop sending thread) ?
     };
+}
+
+// C-linkage functions declarations
+namespace clients
+{
+    namespace internals
+    {
+        extern "C" void sender_thread_cleanup_handler(void *comm_manager);
+    }
 }
 
 namespace threads_layer
@@ -34,11 +50,16 @@ namespace threads_layer
           // or: /*const*/ Message& ??
 
           // mutable - applies to non-static class members of non-reference non-const type and specifies that the member does not affect the externally visible state of the class (as often used for mutexes, memo caches, lazy evaluation, and access instrumentation). mutable members of const class instances are modifiable. (Note: the C++ language grammar treats mutable as a storage-class-specifier, but it does not affect storage class.)
-          mutable pthread_mutex_t access_mutex_;
-          mutable pthread_cond_t empty_cond_;
+          mutable /*volatile*/ pthread_mutex_t access_mutex_;
+          mutable /*volatile*/ pthread_cond_t empty_cond_;
+          // TODO? volatile?
 
           //std::size_t size_; // TODO?
           //const std::size_t MAX_SIZE_ = 10; // TODO?
+
+          friend void clients::internals::sender_thread_cleanup_handler(void *comm_manager);
+
+          void release_access_mutex_on_thread_cancel_cleanup() const;
 
         public:
           BlockingMessageQueue();

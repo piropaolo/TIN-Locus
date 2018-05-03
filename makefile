@@ -1,9 +1,9 @@
 all : server client
 
-server : server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o
-	g++ -o server server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o -pthread
+server : server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o
+	g++ -o server server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o -pthread
 
-server.o : server.cpp signal_handlers.h SocketEndpoint.h ClientManager.h
+server.o : server.cpp signal_handlers.h SocketEndpoint.h ClientManager.h SessionManager.h
 	g++ -c server.cpp -std=c++14
 
 signal_handlers.o : signal_handlers.cpp signal_handlers.h
@@ -12,10 +12,13 @@ signal_handlers.o : signal_handlers.cpp signal_handlers.h
 SocketEndpoint.o : SocketEndpoint.cpp SocketEndpoint.h
 	g++ -c SocketEndpoint.cpp -std=c++11
 
+SessionManager.o : SessionManager.cpp SessionManager.h
+	g++ -c SessionManager.cpp -std=c++11
+
 BlockingMessageQueue.o : BlockingMessageQueue.cpp BlockingMessageQueue.h
 	g++ -c BlockingMessageQueue.cpp -std=c++11
 
-ClientManager.o : ClientManager.cpp ClientManager.h SocketEndpoint.h BlockingMessageQueue.h
+ClientManager.o : ClientManager.cpp ClientManager.h SocketEndpoint.h BlockingMessageQueue.h SessionManager.h
 	g++ -c ClientManager.cpp -std=c++14 -pthread
 
 
@@ -29,4 +32,4 @@ client.o : client.cpp
 clean :
 	rm -f server server.o
 	rm -f client client.o
-	rm -f signal_handlers.o SocketEndpoint.o BlockingMessageQueue.o ClientManager.o
+	rm -f signal_handlers.o SocketEndpoint.o BlockingMessageQueue.o ClientManager.o SessionManager.o

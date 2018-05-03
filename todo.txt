@@ -7,6 +7,11 @@
 - test recv flags
 
 
+DESIGN PATTERNS:
+- Visitor pattern for Message
+- Strategy for ClientManager (strategy of sending - to peers / to all clients / only echo)
+
+
 CONSOLE ARGUMENTS:
 - add server listening port as a commandline argument
 

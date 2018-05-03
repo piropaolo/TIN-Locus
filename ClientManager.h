@@ -20,14 +20,18 @@ namespace clients
         extern "C" void * receiver_thread_routine_wrapper(void *comm_manager);
 
         extern "C" void * sender_thread_routine_wrapper(void *comm_endpoint);
+
+        extern "C" void sender_thread_cleanup_handler(void *comm_manager);
     }
 
     // CommManager ?
     class ClientManager
     {
         private:
+          // TODO temp
+          static int client_id_counter_;
           // TODO
-          //int client_id_;
+          int client_id_;
           /*comm_layer::CommSocketEndpoint comm_endpoint_;*/
           std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr_;
           // TODO? lazy creation (in startFullDuplexComm, not in ctor) ?
@@ -46,10 +50,11 @@ namespace clients
           void sender_thread_routine();
           void receiver_thread_routine() /*const*/;
 
-          void cancel_sender_thread();
+          void cancel_sender_thread(); // TODO rename: stop_sender_thread
 
           friend /*extern "C"*/ void * internals::receiver_thread_routine_wrapper(void *comm_manager);
-          friend /*extern "C"*/ void * internals::sender_thread_routine_wrapper(void *comm_manager);
+          friend void * internals::sender_thread_routine_wrapper(void *comm_manager);
+          friend void internals::sender_thread_cleanup_handler(void *comm_manager);
 
         public:
           // TODO add base class CommEndpoint
@@ -62,7 +67,22 @@ namespace clients
           // send message to the client (async)
           void send(const messages::Message &message);
 
+          // send message to all the peers in the current session
+          void sendToPeersInSession(const messages::Message &message) const;
+          void sendToAllInSession(const messages::Message &message) const;
+
+          // remove Client from the (global ? singleton ?) SessionManager
+          // SessionManager should also have such method
+          // TODO? something different?
+          void removeClient() const;
+          bool operator==(const ClientManager &other_client) const;
+          bool operator!=(const ClientManager &other_client) const;
+
           //void close();   // close connection with the client (initiated by the server)
+
+          // TODO remove client from SessionManager on error!! (e.g. thread exited because of error, and there is no connection with the client host)
+
+          // TODO Strategy Pattern (strategy of sending - to peers / to all clients / echo)
     };
 }
 

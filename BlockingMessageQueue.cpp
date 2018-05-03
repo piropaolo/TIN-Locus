@@ -27,6 +27,9 @@ namespace messages
         std::memcpy(buffer, msg_buffer, msg_size);
         //  > check errors
         size = msg_size;
+
+        // DBG
+        std::cout << "Message ctor" << std::endl;
     }
 
     Message::Message(const Message &message)
@@ -35,7 +38,8 @@ namespace messages
         //if( msg_buffer == nullptr )
         //    throw std::invalid_argument("Invalid message buffer address: nullptr.");
         
-        //DBG std::cout << "Message copy ctor called" << std::endl;
+        //DBG 
+        std::cout << "Message copy ctor called" << std::endl;
 
         buffer = new char[message.size];
         std::memcpy(buffer, message.buffer, message.size);
@@ -63,6 +67,9 @@ namespace messages
     {
         delete [] buffer;
         size = 0;
+
+        // DBG
+        std::cout << "Message dtor" << std::endl;
     }
 }
 
@@ -71,6 +78,8 @@ namespace threads_layer
     // TODO?, TODOCHECK thrwoing exceptions in ctor/dtor ?
     BlockingMessageQueue::BlockingMessageQueue()
     {
+        std::cout << "--BlockingMessageQueue.ctor--" << std::endl;
+
         int sync_op_result;
         if( (sync_op_result = pthread_mutex_init(&access_mutex_, (pthread_mutexattr_t *) NULL)) != 0 )
         // or: PTHREAD_MUTEX_INITIALIZER
@@ -95,6 +104,8 @@ namespace threads_layer
     // It shall be safe to destroy an initialized condition variable upon which no threads are currently blocked. Attempting to destroy a condition variable upon which other threads are currently blocked results in undefined behavior.
     BlockingMessageQueue::~BlockingMessageQueue()
     {
+        std::cout << "--BlockingMessageQueue.dtor--" << std::endl;
+
         int sync_op_result;
         if( (sync_op_result = pthread_mutex_destroy(&access_mutex_)) != 0 )
         {
@@ -172,6 +183,8 @@ namespace threads_layer
         // IMPORTANT IMPLEMENTATION NOTE: When using condition variables there is always a Boolean predicate involving shared variables associated with each condition wait that is true if the thread should proceed. Spurious wakeups from the pthread_cond_timedwait() or pthread_cond_wait() functions may occur. Since the return from pthread_cond_timedwait() or pthread_cond_wait() does not imply anything about the value of this predicate, the predicate should be re-evaluated upon such return.
         while( queue_.empty() ) // thus while, not if
         {
+            // DBG
+            std::cout << "DBG: Will block on cond_wait" << std::endl;
             if( (sync_op_result = pthread_cond_wait(&empty_cond_, &access_mutex_)) != 0 )
             {
                 std::cerr << "Error waiting on condition variable\n"
@@ -195,6 +208,23 @@ namespace threads_layer
 
         //DBG std::cout << "cpy on exit from BlockingMessageQueue.dequeue?" << std::endl;
         return message; // copy TODO make it better
+    }
+
+
+    // private:
+    // Mutex must be released before attempting to destroy it.
+    // (Attempting to destroy a locked mutex results in undefined behavior.)
+    void BlockingMessageQueue::release_access_mutex_on_thread_cancel_cleanup() const
+    {
+        std::cout << "DBG cleanup: mutex released" << std::endl;
+        int sync_op_result;
+        if( (sync_op_result = pthread_mutex_unlock(&access_mutex_)) != 0 )
+        {
+            std::cerr << "Error unlocking mutex\n"
+                         "Error: " << std::strerror(sync_op_result) << std::endl;
+
+            throw std::system_error(sync_op_result, std::generic_category());
+        }
     }
 }
 

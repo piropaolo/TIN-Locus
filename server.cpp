@@ -26,11 +26,10 @@ extern "C" {
 
 #include "signal_handlers.h"
 #include "SocketEndpoint.h"
+#include "SessionManager.h"
 #include "ClientManager.h"
 
 const uint16_t LISTEN_PORT = 9999;
-
-const std::size_t MSG_BUF_SIZE = 100;
 
 // TODO? define special, non-standard types if lacking on build platform
 /*#ifndef socklen_t
@@ -39,11 +38,11 @@ const std::size_t MSG_BUF_SIZE = 100;
 // typedef int socklen_t;
 */
 
-void close_socket_in_thread(int socket_fd);
-extern "C" void * thread_routine(void *connection_socket_fd);    // TODO? TODOCHECK C-language linkage?
-
 // TODO hash(?)-map for threads; key = thread_id
 // int thread_exit_status;
+
+// TODO temporary; temporarily here
+clients::SessionManager session_manager;
 
 int main(int argc, char** argv)
 {
@@ -83,20 +82,39 @@ int main(int argc, char** argv)
     int con_sock_fd;
 
     // TODO temporary; temporarily here
-    std::list< std::unique_ptr< clients::ClientManager > > clients;
+    //std::list< std::unique_ptr< clients::ClientManager > > clients_list;
 
     while( true )
     {
         con_sock_fd = listenSocketEndpoint.acceptPendingConnection();
+
+        // TODO simplify and encapsulate (hide) these:
+        auto commEndpoint = std::make_unique< comm_layer::CommSocketEndpoint >(con_sock_fd);
+        auto client = std::make_unique< clients::ClientManager >( std::move(commEndpoint) ); // TODO std::move ?
+
+        auto client_temp_ptr = client.get();
+        /*if( !client )
+            std::cout << "DBG Pointer to client nullptr'ed" << std::endl;*/
+
+        session_manager.addClient(client); // TODO std::move ?
+
+        if( !client )
+            std::cout << "DBG Pointer to client moved. Now nullptr" << std::endl;
+        /*if( client_temp_ptr == nullptr )
+            std::cout << "DBG Temp ptr to client is nullptr" << std::endl;*/
+
+        // client pointer must be valid at this point; so no std::move?
+        client_temp_ptr->startFullDuplexComm();
         
         // TODO need new (alloc)
-        //comm_layer::CommSocketEndpoint commEndpoint(con_sock_fd);
-        
+        //comm_layer::CommSocketEndpoint commEndpoint(con_sock_fd);   
         // TODO cannot pass CommEndpoint by const reference, because close() method is not const !!
-        clients.push_back( std::make_unique< clients::ClientManager >( std::make_unique< comm_layer::CommSocketEndpoint >(con_sock_fd) ) );
+        //clients_list.push_back( std::make_unique< clients::ClientManager >( std::make_unique< comm_layer::CommSocketEndpoint >(con_sock_fd) ) );
         // TODO does removing/poping call dtor of the element?
         // TODO dtor of the element shall free the allocated memory -> std::unique_ptr
-        clients.back()->startFullDuplexComm();
+        //clients_list.back()->startFullDuplexComm();
+    
+        std::cout << "$$ Clients connected: " << session_manager.getNumberOfClients() << std::endl;
     }
     
     // TODO now it's never reached:
