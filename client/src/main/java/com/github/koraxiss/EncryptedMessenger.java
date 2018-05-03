@@ -26,7 +26,7 @@ public class EncryptedMessenger implements Messenger {
     }
 
     public Packet receive() throws IOException {
-        byte[] buffer = Client.getBuffer();
+        byte[] buffer = new byte[100];
         receive(buffer, 0, 1);
         int type = buffer[0];
         PacketType packetType = PacketType.packetTypeMap.get(type);
@@ -34,6 +34,7 @@ public class EncryptedMessenger implements Messenger {
             case _OPEN_ENCR:
                 return new Packet(PacketType._OPEN_ENCR);
             case _PUBLIC_KEY:
+                return null;
             case _SYMMETRIC_KEY:
             case _TEST_KEY:
             case _ACK_ERR:
