@@ -30,9 +30,9 @@ namespace packet {
             UNDEFINED = 100
         };
 
-        static uint8_t toUint8(PacketType::header header);
+        static uint8_t toUInt8(PacketType::header header);
 
-        static PacketType::header toPackeType(uint8_t header);
+        static PacketType::header toPacketType(uint8_t header);
     };
 
 }

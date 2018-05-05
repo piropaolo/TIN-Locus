@@ -2,11 +2,11 @@
 
 namespace packet {
 
-    uint8_t packet::PacketType::toUint8(header header) {
+    uint8_t packet::PacketType::toUInt8(header header) {
         return static_cast<uint8_t>(header);
     }
 
-    packet::PacketType::header packet::PacketType::toPackeType(const uint8_t header) {
+    packet::PacketType::header packet::PacketType::toPacketType(uint8_t header) {
         static std::unordered_map<uint8_t, PacketType::header> packetTypeMap = {
                 {static_cast<uint8_t>(PacketType::header::OPEN),            PacketType::header::OPEN},
                 {static_cast<uint8_t>(PacketType::header::CLOSE),           PacketType::header::CLOSE},
