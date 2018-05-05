@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.10)
 project(Locus/packet)
-
-set(CMAKE_CXX_STANDARD 14)
 
 set(SOURCE_FILES
         PacketType.cpp PacketType.h
+#        Packet.cpp Packet.h
         )
 
 add_library(packet STATIC ${SOURCE_FILES})
+
+add_subdirectory(test)
