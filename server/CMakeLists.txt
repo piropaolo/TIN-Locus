@@ -8,10 +8,14 @@ set(CMAKE_CXX_STANDARD 14)
 include_directories(src)
 
 add_subdirectory(src/log)
+add_subdirectory(src/packet)
+add_subdirectory(src/msg)
 
-add_executable(Locus src/main.cpp)
+add_subdirectory(lib)
 
-target_link_libraries(Locus
-        log
+add_executable(${PROJECT_NAME} src/main.cpp)
+
+target_link_libraries(${PROJECT_NAME}
+        log msg
 #        ${CMAKE_THREAD_LIBS_INIT}
         )
