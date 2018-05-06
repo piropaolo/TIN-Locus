@@ -1,7 +1,6 @@
 package com.github.koraxiss;
 
 import java.io.IOException;
-import java.net.SocketException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -33,7 +32,8 @@ public class Client {
         Message message;
         while (running) {
             try {
-                message = childMessages.poll();
+//                message = childMessages.poll();
+                message = childMessages.take();
                 if (message != null) {
                     if (message.getType() == Message.MessageType.PACKET)
                         sendInstructions.put(message);
@@ -94,7 +94,8 @@ public class Client {
             Message message = null;
             while (running) {
                 try {
-                    message = sendInstructions.poll();
+//                    message = sendInstructions.poll();
+                    message = sendInstructions.take();
                     if (message != null && message.getType() == Message.MessageType.PACKET) {
                         packet = message.getPacket();
                         simpleMessenger.send(Converter.stringToByte(message.getString()), 0, 81);
