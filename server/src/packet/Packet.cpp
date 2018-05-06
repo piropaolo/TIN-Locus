@@ -10,24 +10,32 @@ namespace packet {
         return type;
     }
 
-    const size_t Packet::getSize() const {
-        return ( sizeof type + buffer.size() ) * CHAR_BIT;
+    const size_t Packet::getTypeSize() const {
+        return sizeof type * CHAR_BIT;
+    }
+
+    const std::byte *Packet::getTypeData() const {
+        return reinterpret_cast< const std::byte * >( std::addressof(type));
+    }
+
+    const size_t Packet::getBufferSize() const {
+        return buffer.size() * CHAR_BIT;
+    }
+
+    const std::byte *Packet::getBufferData() const {
+        return buffer.data();
     }
 
     void Packet::setBuffer(const std::vector<std::byte> &bytes) {
         buffer = bytes;
     }
 
-    void Packet::pushToBuffer(const std::vector<std::byte> &bytes) {
-        buffer.insert(std::end(buffer), std::begin(bytes), std::end(bytes));
-    }
-
     const std::vector<std::byte> &Packet::getBuffer() const {
         return buffer;
     }
 
-    const std::byte *Packet::getData() const {
-        return buffer.data();
+    void Packet::pushToBuffer(const std::vector<std::byte> &bytes) {
+        buffer.insert(std::end(buffer), std::begin(bytes), std::end(bytes));
     }
 
     bool Packet::operator==(const Packet &rhs) const {

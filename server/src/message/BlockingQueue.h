@@ -83,7 +83,7 @@ namespace message {
         T ret;
         {
             std::unique_lock<std::mutex> uniqueGuard(accessMutex);
-            emptyCondition.wait(uniqueGuard, [&] { return !(queue.empty() && priority.empty()); } );
+            emptyCondition.wait(uniqueGuard, [&] { return !(queue.empty() && priority.empty()); });
             ret = popWithoutBlocking();
         }
         fullCondition.notify_one();
@@ -97,12 +97,12 @@ namespace message {
         bool notify = false;
         {
             std::unique_lock<std::mutex> uniqueGuard(accessMutex);
-            if(emptyCondition.wait_for(uniqueGuard, real_time, [&] { return !(queue.empty() && priority.empty()); } )) {
+            if (emptyCondition.wait_for(uniqueGuard, real_time, [&] { return !(queue.empty() && priority.empty()); })) {
                 ret = popWithoutBlocking();
                 notify = true;
             }
         }
-        if(notify) {
+        if (notify) {
             fullCondition.notify_one();
         }
         return ret;

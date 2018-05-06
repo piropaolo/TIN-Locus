@@ -20,9 +20,9 @@ TEST(getType, Alive) {
     EXPECT_EQ(packet.getType(), PacketType::ALIVE);
 }
 
-TEST(getSize, Open) {
+TEST(getTypeSize, Open) {
     Packet packet(PacketType::OPEN);
-    EXPECT_EQ(packet.getSize(), 1 * 8);
+    EXPECT_EQ(packet.getTypeSize(), 1 * 8);
 }
 
 TEST(getBuffer, empty) {
@@ -45,11 +45,14 @@ TEST(getBuffer, notEmpty2) {
 TEST(getSize, SetName) {
     Packet packet(PacketType::SET_NAME);
     packet.pushToBuffer(to_bytes(uint8_t(3)));
+    EXPECT_EQ(packet.getTypeSize(), sizeof(uint8_t) * 8);
 
     packet.pushToBuffer(to_bytes('a'));
+    EXPECT_EQ(packet.getBufferSize(), (sizeof(uint8_t) + 1 * sizeof(char)) * 8);
     packet.pushToBuffer(to_bytes('l'));
+    EXPECT_EQ(packet.getBufferSize(), (sizeof(uint8_t) + 2 * sizeof(char)) * 8);
     packet.pushToBuffer(to_bytes('a'));
-    EXPECT_EQ(packet.getSize(), (1 + sizeof(uint8_t) + 3 * sizeof(char)) * 8);
+    EXPECT_EQ(packet.getBufferSize(), (sizeof(uint8_t) + 3 * sizeof(char)) * 8);
 }
 
 TEST(OperatorEquality, EmptyBuffer) {
@@ -93,4 +96,56 @@ TEST(OperatorLess, notEmptyBuffer) {
     EXPECT_TRUE(packet1 < packet2);
     EXPECT_TRUE(packet1 < packet3);
     EXPECT_TRUE(packet2 < packet3);
+}
+
+
+TEST(popFromBuffer, emptyBuffer) {
+    Packet packet1(PacketType::OPEN);
+    int post;
+
+    ASSERT_THROW(packet1.popFromBuffer(post), std::runtime_error);
+}
+
+TEST(popFromBuffer, intElement) {
+    Packet packet(PacketType::OPEN);
+    int pre = 1;
+    int post;
+
+    packet.pushToBuffer(pre);
+    EXPECT_EQ(packet.popFromBuffer(post), pre);
+    EXPECT_EQ(packet.getBufferSize(), 0);
+}
+
+TEST(popFromBuffer, longElement) {
+    Packet packet(PacketType::OPEN);
+    long pre = 1;
+    long post;
+
+    packet.pushToBuffer(pre);
+    EXPECT_EQ(packet.popFromBuffer(post), pre);
+    EXPECT_EQ(packet.getBufferSize(), 0);
+}
+
+TEST(popFromBuffer, doubleElement) {
+    Packet packet(PacketType::OPEN);
+    double pre = 1;
+    double post;
+
+    packet.pushToBuffer(pre);
+    EXPECT_EQ(packet.popFromBuffer(post), pre);
+    EXPECT_EQ(packet.getBufferSize(), 0);
+}
+
+TEST(popFromBuffer, menyIntElements) {
+    Packet packet(PacketType::OPEN);
+    for (int i = 0; i < 10; ++i) {
+        packet.pushToBuffer(i);
+    }
+
+    int post;
+    for (int i = 0; i < 10; ++i) {
+        EXPECT_EQ(packet.popFromBuffer(post), i);
+    }
+
+    EXPECT_EQ(packet.getBufferSize(), 0);
 }
