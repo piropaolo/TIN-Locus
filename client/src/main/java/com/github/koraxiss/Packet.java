@@ -60,16 +60,16 @@ public class Packet {
     private byte[] bufferLocation() {
         byte[] bytes = new byte[27];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
-        byte[] shor = Converter.shortToBytes((short) this.getArg1());
+        byte[] shor = Converter.shortToByte((short) this.getArg1());
         for (int i = 0; i < shor.length; ++i)
             bytes[1 + i] = shor[i];
-        byte[] lat = Converter.longToBytes((long) this.getArg2());
+        byte[] lat = Converter.floatToByte((long) this.getArg2());
         for (int i = 0; i < lat.length; ++i)
             bytes[3 + i] = lat[i];
-        byte[] lon = Converter.longToBytes((long) this.getArg3());
+        byte[] lon = Converter.floatToByte((long) this.getArg3());
         for (int i = 0; i < lon.length; ++i)
             bytes[11 + i] = lon[i];
-        byte[] t = Converter.longToBytes((long) this.getArg4());
+        byte[] t = Converter.longToByte((long) this.getArg4());
         for (int i = 0; i < t.length; ++i)
             bytes[19 + i] = t[i];
         return bytes;
@@ -78,13 +78,13 @@ public class Packet {
     private byte[] bufferMyLocation() {
         byte[] bytes = new byte[25];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
-        byte[] lat = Converter.longToBytes((long) this.getArg1());
+        byte[] lat = Converter.floatToByte((long) this.getArg1());
         for (int i = 0; i < lat.length; ++i)
             bytes[1 + i] = lat[i];
-        byte[] lon = Converter.longToBytes((long) this.getArg2());
+        byte[] lon = Converter.floatToByte((long) this.getArg2());
         for (int i = 0; i < lon.length; ++i)
             bytes[9 + i] = lon[i];
-        byte[] dt = Converter.longToBytes((long) this.getArg3());
+        byte[] dt = Converter.longToByte((long) this.getArg3());
         for (int i = 0; i < dt.length; ++i)
             bytes[17 + i] = dt[i];
         return bytes;
@@ -94,7 +94,7 @@ public class Packet {
         byte[] bytes = new byte[1 + 2 + 1 + (int) this.getArg2()];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
         byte[] shor = new byte[2];
-        shor = Converter.shortToBytes((short)this.getArg1());
+        shor = Converter.shortToByte((short)this.getArg1());
         bytes[1] = shor[0];
         bytes[2] = shor[1];
         bytes[3] = Converter.intToByte((int) this.getArg2());

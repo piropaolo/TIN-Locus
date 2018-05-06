@@ -46,7 +46,7 @@ public class ProtocolMessenger implements Messenger {
                 Packet packet1 = new Packet(PacketType._NEW_FOLLOWED);
                 byte[] id = new byte[2];
                 receive(id, 0, 2);
-                short sId = Converter.bytesToShort(id);
+                short sId = Converter.byteToShort(id);
                 packet1.setArg1((Object) sId);
                 receive(buffer, 0, 1);
                 int size1 = Converter.byteToInt(buffer[0]);
@@ -74,7 +74,7 @@ public class ProtocolMessenger implements Messenger {
                 Packet packet3 = new Packet(PacketType._LOCATION);
                 byte[] id1 = new byte[2];
                 receive(id1, 0, 2);
-                short sId1 = Converter.bytesToShort(id1);
+                short sId1 = Converter.byteToShort(id1);
                 packet3.setArg1((Object) sId1);
                 byte[] lat = new byte[8];
                 receive(lat, 0, 8);
