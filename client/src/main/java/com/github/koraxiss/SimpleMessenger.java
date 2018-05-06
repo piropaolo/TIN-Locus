@@ -8,18 +8,14 @@ public class SimpleMessenger implements Messenger {
     private InputStream input;
     private OutputStream output;
 
-    public SimpleMessenger(String host, int port) {
-        try {
+    public SimpleMessenger(String host, int port) throws IOException {
             socket = new Socket(host, port);
             input = socket.getInputStream();
             output = socket.getOutputStream();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    public SimpleMessenger(InputStream input) {
-        this.input = input;
+    public void closeSocket() throws IOException {
+        this.socket.close();
     }
 
     public void send(byte[] buffer, int offset, int n) throws IOException {
