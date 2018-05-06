@@ -10,7 +10,9 @@ namespace packet {
     public:
         explicit Packet(PacketType::header type);
         Packet(const Packet &) = default;
+        Packet(Packet &&) = default;
         Packet &operator=(const Packet &) = default;
+        Packet &operator=(Packet &&) = default;
 
         PacketType::header getType() const;
 
