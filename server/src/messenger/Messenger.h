@@ -7,13 +7,13 @@
 namespace messenger {
     class Messenger {
     public:
-        virtual int send(const void *buffer, std::size_t n) = 0;
-        virtual int recv(void *buffer, std::size_t n) = 0;
+        virtual void send(const void *buffer, std::size_t n) = 0;
+        virtual void recv(void *buffer, std::size_t n) = 0;
 
-        virtual int send(const packet::Packet &packet);
+        virtual void send(const packet::Packet &packet);
         virtual packet::Packet recv();
 
-        virtual int init() = 0;
+        virtual void init() = 0;
 
     private:
         const size_t bytesToBites(const size_t &bytes) const;

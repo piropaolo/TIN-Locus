@@ -5,7 +5,7 @@ set(SOURCE_FILES
         Messenger.cpp Messenger.h
         SimpleMessenger.h SimpleMessenger.cpp
         EncryptMessenger.cpp EncryptMessenger.h
-        ProrocolMessenger.cpp ProrocolMessenger.h
+        ProtocolMessenger.cpp ProtocolMessenger.h
         )
 
 add_subdirectory(test)

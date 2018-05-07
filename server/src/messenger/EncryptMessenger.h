@@ -8,10 +8,10 @@ namespace messenger {
     public:
         explicit EncryptMessenger(Messenger *messenger);
 
-        int send(const void *buffer, std::size_t n) override;
-        int recv(void *buffer, std::size_t n) override;
+        void send(const void *buffer, std::size_t n) override;
+        void recv(void *buffer, std::size_t n) override;
 
-        int init() override;
+        void init() override;
 
     private:
         Messenger* messenger;

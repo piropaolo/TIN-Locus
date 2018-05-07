@@ -4,7 +4,7 @@
 
 using namespace messenger;
 
-TEST(EncryptMessenger_, Empty) {
+TEST(EncryptMessenger_Constructor, Empty) {
     SimpleMessenger simpleMessenger;
     EncryptMessenger encryptMessenger(&simpleMessenger);
     EXPECT_TRUE(1);

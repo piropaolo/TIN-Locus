@@ -6,16 +6,11 @@ using namespace packet;
 
 namespace messenger {
 
-    int SimpleMessenger::send(const void *buffer, std::size_t n) {
-        return 0;
-    }
+    void SimpleMessenger::send(const void *buffer, std::size_t n) {}
 
-    int SimpleMessenger::recv(void *buffer, std::size_t n) {
-        return 0;
-    }
+    void SimpleMessenger::recv(void *buffer, std::size_t n) {}
 
-    int SimpleMessenger::init() {
+    void SimpleMessenger::init() {
         Messenger::send(Packet(PacketType::OPEN));
-        return 0;
     }
 }

@@ -6,7 +6,7 @@ using namespace packet;
 
 namespace messenger {
 
-    int Messenger::send(const packet::Packet &packet) {
+    void Messenger::send(const packet::Packet &packet) {
         send(packet.getTypeData(), packet.getTypeSize());
         for (auto &buffer : *packet.getBuffer()) {
             send(buffer.data(), bytesToBites(buffer.size()));
