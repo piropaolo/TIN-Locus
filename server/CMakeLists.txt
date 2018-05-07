@@ -4,6 +4,7 @@ project(Locus)
 #find_package(Threads)
 
 set(CMAKE_CXX_STANDARD 17)
+enable_testing()
 
 include_directories(src)
 
@@ -17,6 +18,6 @@ add_subdirectory(lib)
 add_executable(${PROJECT_NAME} src/main.cpp)
 
 target_link_libraries(${PROJECT_NAME}
-        log packet message messenger
+        Locus_log Locus_packet Locus_message Locus_messenger
 #        ${CMAKE_THREAD_LIBS_INIT}
         )

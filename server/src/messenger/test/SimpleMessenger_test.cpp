@@ -3,7 +3,7 @@
 
 using namespace messenger;
 
-TEST(SimpleMessenger, Empty) {
+TEST(SimpleMessenger_, Empty) {
     SimpleMessenger simpleMessenger;
     EXPECT_TRUE(1);
 }

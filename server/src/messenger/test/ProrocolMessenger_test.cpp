@@ -4,7 +4,7 @@
 
 using namespace messenger;
 
-TEST(Constructor, EmptyQueue) {
+TEST(Constructor_, EmptyQueue) {
     SimpleMessenger simpleMessenger;
     ProrocolMessenger prorocolMessenger(&simpleMessenger);
     EXPECT_TRUE(1);

@@ -9,4 +9,4 @@ add_executable(${PROJECT_NAME}
         )
 
 target_link_libraries(${PROJECT_NAME} gtest gtest_main)
-target_link_libraries(${PROJECT_NAME} messenger packet)
+target_link_libraries(${PROJECT_NAME} Locus_messenger Locus_packet)

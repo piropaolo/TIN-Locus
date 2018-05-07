@@ -24,6 +24,8 @@ namespace packet {
         bool operator<=(const Packet &rhs) const;
         bool operator>=(const Packet &rhs) const;
 
+        int x;
+
     private:
         PacketType::header type = PacketType::UNDEFINED;
         BlockBuffer buffer;

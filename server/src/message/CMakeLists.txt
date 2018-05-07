@@ -1,4 +1,4 @@
-project(Locus/message)
+project(Locus_message)
 
 set(SOURCE_FILES
         Message.cpp Message.h
@@ -8,4 +8,4 @@ set(SOURCE_FILES
 
 add_subdirectory(test)
 
-add_library(message STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

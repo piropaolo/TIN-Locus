@@ -1,4 +1,4 @@
-project(Locus/messenger)
+project(Locus_messenger)
 
 
 set(SOURCE_FILES
@@ -10,4 +10,4 @@ set(SOURCE_FILES
 
 add_subdirectory(test)
 
-add_library(messenger STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

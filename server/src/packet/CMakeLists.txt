@@ -1,4 +1,4 @@
-project(Locus/packet)
+project(Locus_packet)
 
 set(SOURCE_FILES
         PacketType.cpp PacketType.h
@@ -7,4 +7,4 @@ set(SOURCE_FILES
 
 add_subdirectory(test)
 
-add_library(packet STATIC ${SOURCE_FILES})
+add_library(${PROJECT_NAME} STATIC ${SOURCE_FILES})

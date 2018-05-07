@@ -5,12 +5,12 @@
 
 using namespace packet;
 
-TEST(getSize, Empty) {
+TEST(BlockBuffer_getSize, Empty) {
     BlockBuffer buffer;
     EXPECT_EQ(buffer.size(), 0);
 }
 
-TEST(push, fewElem) {
+TEST(BlockBuffer_push, fewElem) {
     BlockBuffer buffer;
 
     std::vector<std::byte> bytes(5, std::byte(1));
@@ -24,7 +24,7 @@ TEST(push, fewElem) {
     EXPECT_EQ(buffer.size(), 3);
 }
 
-TEST(pop, Empty) {
+TEST(BlockBuffer_pop, Empty) {
     BlockBuffer buffer;
 
     ASSERT_THROW(buffer.pop(), std::runtime_error);
@@ -33,7 +33,7 @@ TEST(pop, Empty) {
     ASSERT_THROW(buffer.pop(x), std::runtime_error);
 }
 
-TEST(pop, NonEmpty1) {
+TEST(BlockBuffer_pop, NonEmpty1) {
     BlockBuffer buffer;
 
     std::vector<std::byte> bytes(5, std::byte(1));
@@ -44,7 +44,7 @@ TEST(pop, NonEmpty1) {
     EXPECT_EQ(buffer.size(), 0);
 }
 
-TEST(pop, NonEmpty2) {
+TEST(BlockBuffer_pop, NonEmpty2) {
     BlockBuffer buffer;
 
     std::vector<std::byte> bytes(5, std::byte(1));
@@ -57,7 +57,7 @@ TEST(pop, NonEmpty2) {
     EXPECT_EQ(buffer.size(), 0);
 }
 
-TEST(pop, NonEmpty3) {
+TEST(BlockBuffer_pop, NonEmpty3) {
     BlockBuffer buffer;
 
     int x;
@@ -69,7 +69,7 @@ TEST(pop, NonEmpty3) {
     EXPECT_EQ(buffer.size(), 0);
 }
 
-TEST(pop, NonEmpty4) {
+TEST(BlockBuffer_pop, NonEmpty4) {
     BlockBuffer buffer;
 
     std::vector<std::byte> bytes(4, std::byte(0));
@@ -80,7 +80,7 @@ TEST(pop, NonEmpty4) {
     EXPECT_EQ(buffer.size(), 0);
 }
 
-TEST(pop, NonEmpty5) {
+TEST(BlockBuffer_pop, NonEmpty5) {
     BlockBuffer buffer;
 
     std::vector<std::byte> bytes(4, std::byte(0));
@@ -91,7 +91,7 @@ TEST(pop, NonEmpty5) {
     EXPECT_EQ(buffer.size(), 0);
 }
 
-TEST(pop, NonEmpty6) {
+TEST(BlockBuffer_pop, NonEmpty6) {
     BlockBuffer buffer;
 
     int x;
