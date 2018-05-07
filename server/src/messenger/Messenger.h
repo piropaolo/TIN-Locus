@@ -17,7 +17,7 @@ namespace messenger {
 
     private:
         const size_t bytesToBites(const size_t &bytes) const;
-        std::vector<std::byte> readSizeAndNextVariable();
+        const std::vector<std::byte> readNBytes(const size_t &n);
 
         packet::Packet read_SET_NAME();
         packet::Packet read_ADD_FOLLOWER();

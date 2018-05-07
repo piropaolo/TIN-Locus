@@ -8,14 +8,14 @@ namespace messenger {
 
     int Messenger::send(const packet::Packet &packet) {
         send(packet.getTypeData(), packet.getTypeSize());
-        send(packet.getBufferData(), packet.getBufferSize());
+        for (auto &buffer : *packet.getBuffer()) {
+            send(buffer.data(), bytesToBites(buffer.size()));
+        }
     }
 
     packet::Packet Messenger::recv() {
-        std::vector<std::byte> bytes(sizeof(PacketType::header));
-        recv(bytes.data(), bytesToBites(bytes.size()));
         uint8_t header;
-        from_bytes(bytes, header);
+        from_bytes(readNBytes(sizeof(PacketType::header)), header);
 
         switch (PacketType::toPacketType(header)) {
             case PacketType::CLOSE:
@@ -57,63 +57,60 @@ namespace messenger {
     const size_t Messenger::bytesToBites(const size_t &bytes) const {
         return bytes * CHAR_BIT;
     }
-
-    std::vector<std::byte> Messenger::readSizeAndNextVariable() {
-        std::vector<std::byte> bytes(sizeof(uint8_t));
+    
+    const std::vector<std::byte> Messenger::readNBytes(const size_t &n) {
+        std::vector<byte> bytes(n);
         recv(bytes.data(), bytesToBites(bytes.size()));
-
-        uint8_t size;
-        from_bytes(bytes, size);
-        bytes.reserve(bytes.size() + size);
-
-        recv(bytes.data() + sizeof(uint8_t), bytesToBites(sizeof(std::byte)) * size);
         return bytes;
     }
 
     packet::Packet Messenger::read_PUBLIC_KEY() {
         Packet packet(PacketType::PUBLIC_KEY);
-        packet.pushToBuffer(readSizeAndNextVariable());
+        packet.getBuffer().push(readNBytes(1));
+        packet.getBuffer().push(readNBytes(packet.getBuffer().frontSize()));
         return packet;
     }
 
     packet::Packet Messenger::read_SYMMETRIC_KEY() {
         Packet packet(PacketType::SYMMETRIC_KEY);
-        packet.pushToBuffer(readSizeAndNextVariable());
+        packet.getBuffer().push(readNBytes(1));
+        packet.getBuffer().push(readNBytes(packet.getBuffer().frontSize()));
         return packet;
     }
 
     packet::Packet Messenger::read_TEST_KEY() {
         Packet packet(PacketType::TEST_KEY);
-        packet.pushToBuffer(readSizeAndNextVariable());
+        packet.getBuffer().push(readNBytes(1));
+        packet.getBuffer().push(readNBytes(packet.getBuffer().frontSize()));
         return packet;
     }
 
     packet::Packet Messenger::read_SET_NAME() {
         Packet packet(PacketType::SET_NAME);
-        packet.pushToBuffer(readSizeAndNextVariable());
+        packet.getBuffer().push(readNBytes(1));
+        packet.getBuffer().push(readNBytes(packet.getBuffer().frontSize()));
         return packet;
     }
 
     packet::Packet Messenger::read_ADD_FOLLOWER() {
         Packet packet(PacketType::ADD_FOLLOWER);
-        packet.pushToBuffer(readSizeAndNextVariable());
+        packet.getBuffer().push(readNBytes(1));
+        packet.getBuffer().push(readNBytes(packet.getBuffer().frontSize()));
         return packet;
     }
 
     packet::Packet Messenger::read_REMOVE_FOLLOWER() {
         Packet packet(PacketType::REMOVE_FOLLOWER);
-        packet.pushToBuffer(readSizeAndNextVariable());
+        packet.getBuffer().push(readNBytes(1));
+        packet.getBuffer().push(readNBytes(packet.getBuffer().frontSize()));
         return packet;
     }
 
     packet::Packet Messenger::read_MY_LOCATION() {
         Packet packet(PacketType::MY_LOCATION);
-
-        size_t size = 4 + 4 + 8;
-        std::vector<std::byte> bytes(size);
-        recv(bytes.data(), bytesToBites(bytes.size()));
-        packet.pushToBuffer(bytes);
-
+        packet.getBuffer().push(readNBytes(4));
+        packet.getBuffer().push(readNBytes(4));
+        packet.getBuffer().push(readNBytes(8));
         return packet;
     }
 }

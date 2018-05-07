@@ -3,7 +3,7 @@ project(Locus/packet)
 set(SOURCE_FILES
         PacketType.cpp PacketType.h
         Packet.cpp Packet.h
-        Converter.h)
+        Converter.h BlockBuffer.cpp BlockBuffer.h)
 
 add_subdirectory(test)
 
