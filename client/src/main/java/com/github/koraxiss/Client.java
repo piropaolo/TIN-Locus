@@ -8,6 +8,7 @@ public class Client {
     private SimpleMessenger simpleMessenger;
     private EncryptedMessenger encryptedMessenger;
     private ProtocolMessenger protocolMessenger;
+    private Messenger activeMessenger;
     private BlockingQueue<Message> childMessages;
     private BlockingQueue<Message> sendInstructions;
     private Thread readerThread;
@@ -18,6 +19,7 @@ public class Client {
         simpleMessenger = new SimpleMessenger("0.0.0.0", 9999);
         encryptedMessenger = new EncryptedMessenger(simpleMessenger);
         protocolMessenger = new ProtocolMessenger(encryptedMessenger);
+        activeMessenger = simpleMessenger;
         childMessages = new LinkedBlockingQueue<>();
         sendInstructions = new LinkedBlockingQueue<>();
         readerThread = new Thread(new ReaderThread());
@@ -30,6 +32,11 @@ public class Client {
         writerThread.start();
         readerThread.start();
         Message message;
+        try {
+            sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._OPEN)));
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         while (running) {
             try {
 //                message = childMessages.poll();
@@ -65,17 +72,16 @@ public class Client {
         @Override
         public void run() {
             Packet packet = null;
-            byte[] bytes = new byte[81];
             while (running) {
                 try {
-//                    packet = simpleMessenger.receive();
-                    simpleMessenger.receive(bytes, 0, 81);
-                    childMessages.put(new Message(Message.MessageType.PACKET, packet, Converter.byteToString(bytes)));
+                    packet = simpleMessenger.receive();
+                    childMessages.put(new Message(Message.MessageType.PACKET, packet));
+//                    childMessages.put(new Message(Message.MessageType.PACKET, packet, Converter.byteToString(bytes)));
                     Thread.sleep(500);
                 } catch (IOException e1) {
 //                    e1.printStackTrace();
                     try {
-                        childMessages.put(new Message(Message.MessageType.ERROR, null, null));
+                        childMessages.put(new Message(Message.MessageType.ERROR, null));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -96,15 +102,15 @@ public class Client {
                 try {
 //                    message = sendInstructions.poll();
                     message = sendInstructions.take();
-                    if (message != null && message.getType() == Message.MessageType.PACKET) {
+                    if (message.getType() == Message.MessageType.PACKET) {
                         packet = message.getPacket();
-                        simpleMessenger.send(Converter.stringToByte(message.getString()), 0, 81);
+                        activeMessenger.send(packet);
                     }
                     Thread.sleep(500);
                 } catch (IOException e1) {
 //                    e1.printStackTrace();
                     try {
-                        childMessages.put(new Message(Message.MessageType.ERROR, null, null));
+                        childMessages.put(new Message(Message.MessageType.ERROR, null));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
