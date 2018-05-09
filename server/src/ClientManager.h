@@ -1,7 +1,8 @@
 #ifndef CLIENT_MANAGER_H
 #define CLIENT_MANAGER_H
 
-#include "SocketEndpoint.h"
+//#include "SocketEndpoint.h"
+#include "messenger/Messenger.h"
 #include "BlockingMessageQueue.h"
 
 extern "C" {
@@ -31,7 +32,7 @@ namespace clients
           // TODO int?
           int client_id_;
           /*comm_layer::CommSocketEndpoint comm_endpoint_;*/
-          std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr_;
+          std::unique_ptr< messenger::Messenger > messenger_ptr_;
 
           // TODO? lazy creation (in startFullDuplexComm, not in ctor) ?
           threads_layer::BlockingMessageQueue message_queue_;
@@ -58,7 +59,7 @@ namespace clients
         public:
           // TODO add base class CommEndpoint
           /*ClientManager(const comm_layer::CommSocketEndpoint &comm_endpoint);*/
-          ClientManager(std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr);
+          ClientManager(std::unique_ptr< messenger::Messenger > messenger_ptr);
           ~ClientManager();
 
           // start full-duplex communication with the client (async)

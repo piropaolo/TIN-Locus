@@ -20,7 +20,8 @@ extern "C" {
 #include <memory> // std::make_unique (needs C++14), std::unique_ptr
 
 #include "signal_handlers.h"
-#include "SocketEndpoint.h"
+//#include "SocketEndpoint.h"
+#include "messenger/SimpleMessenger.h"
 #include "SessionManager.h"
 #include "ClientManager.h"
 
@@ -74,7 +75,7 @@ int main(int argc, char** argv)
         con_sock_fd = listenSocketEndpoint.acceptPendingConnection();
 
         // TODO simplify and encapsulate (hide) these:
-        auto commEndpoint = std::make_unique< comm_layer::CommSocketEndpoint >(con_sock_fd);
+        auto commEndpoint = std::make_unique< messenger::SimpleMessenger >(con_sock_fd);
         auto client = std::make_unique< clients::ClientManager >( std::move(commEndpoint) ); // TODO std::move ?
 
         auto client_temp_ptr = client.get();

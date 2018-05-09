@@ -5,6 +5,9 @@
 
 #include <utility>
 
+#include <sstream>
+#include "log/Logger.h"
+
 extern "C" {
   #include <unistd.h> // standard symbolic constants and types (e.g. STDOUT_FILENO)
 }
@@ -63,24 +66,15 @@ namespace clients
 
     void ClientManager::sender_thread_routine()
     {
-        //pthread_cleanup_push(sender_thread_cleanup_handler, (void *) NULL);
-
-        char weclome_message[] = "\n"
-                                "This is a welcome message.\n"
-                                "Hello. You've just connected to the TestTcp server.\n"
-                                "\n";
-                                //"Your client id is " 
         try
-        {
-            comm_endpoint_ptr_->sendNBytes(weclome_message, sizeof weclome_message);   
-
+        {   
             while( true )
             {
                 // block untill there is a message to send to the client
                 // TODO? add operator= for Message ?
                 messages::Message message = message_queue_.dequeue();
 
-                comm_endpoint_ptr_->sendNBytes(message.buffer, message.size);
+                messenger_ptr_->send(message.buffer, message.size);
 
                 // how to exit? When connection closed... -- signal? pthread_cancel? special_message (=> needs message parsing :/)?
                 // receiver_thread knows when client disconnected -> signal/pthread_cancel to sender_thread
@@ -107,6 +101,7 @@ namespace clients
     
     void ClientManager::receiver_thread_routine() /*const*/
     {
+        std::ostringstream log_stream;
         char message_buffer[MSG_BUF_SIZE];
         int bytes_received = 0;
 
@@ -114,18 +109,19 @@ namespace clients
         {
             do
             {
-                bytes_received = comm_endpoint_ptr_->receive(message_buffer, MSG_BUF_SIZE);
+                bytes_received =  messenger_ptr_->recvAny(message_buffer, MSG_BUF_SIZE);
 
                 // TODO DBG cout client id
                 if( bytes_received == 0 ) // TODO temporary
                     break;
-
-                std::cout << bytes_received << " bytes received. Message:\n" <<
+         
+                log_stream << bytes_received << " bytes received. Message:\n" <<
                             "> ";
-                std::cout.write(message_buffer, bytes_received);
-                std::cout << std::endl;
+                log_stream.write(message_buffer, bytes_received);
+                log::Logger::getInstance().logDebug( log_stream.str() );
+                log_stream.str("");
 
-                this->sendToPeersInSession( messages::Message(message_buffer, bytes_received) );
+                this->sendToAllInSession( messages::Message(message_buffer, bytes_received) );
             }
             while( true ); // temporary; need exception for connection shutdown -> then: while( true ) {..}
             // TODO without connection-close exception server will send 0-byte-length message to client when he disconnects
@@ -152,7 +148,7 @@ namespace clients
             }
             assert(thread_exit_status == PTHREAD_CANCELED);
 
-            comm_endpoint_ptr_->close();
+            messenger_ptr_->close();
             removeClient();
 
             return;
@@ -182,7 +178,7 @@ namespace clients
 
 
         // TODO inside try-catch
-        comm_endpoint_ptr_->close();
+        messenger_ptr_->close();
 
         removeClient();
     }
@@ -200,11 +196,11 @@ namespace clients
     }
 
 
-    /*ClientManager::ClientManager(const comm_layer::CommSocketEndpoint &comm_endpoint) : comm_endpoint_(comm_endpoint)*/
-    ClientManager::ClientManager(std::unique_ptr< comm_layer::CommSocketEndpoint > comm_endpoint_ptr)    // &&-ref ?
+    /*ClientManager::ClientManager(const messenger::Messenger &comm_endpoint) : comm_endpoint_(comm_endpoint)*/
+    ClientManager::ClientManager(std::unique_ptr< messenger::Messenger > messenger_ptr)    // &&-ref ?
     {
-        //comm_endpoint_ptr_ = std::move(comm_endpoint_ptr);
-        comm_endpoint_ptr_.swap(comm_endpoint_ptr);
+        //messenger_ptr_ = std::move(comm_endpoint_ptr);
+        messenger_ptr_.swap(messenger_ptr);
         // std::swap ?
         client_id_ = ++client_id_counter_;
     }

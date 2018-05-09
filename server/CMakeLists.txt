@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
+#cmake_minimum_required(VERSION 3.5.1)
 project(Locus)
 
 #find_package(Threads)
@@ -15,7 +16,7 @@ add_subdirectory(src/messenger)
 
 add_subdirectory(lib)
 
-add_executable(${PROJECT_NAME} src/main.cpp)
+add_executable(${PROJECT_NAME} src/server.cpp)
 
 target_link_libraries(${PROJECT_NAME}
         Locus_log Locus_packet Locus_message Locus_messenger

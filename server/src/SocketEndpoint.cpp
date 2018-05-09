@@ -19,6 +19,9 @@ extern "C" {
 
 #include "SocketEndpoint.h"
 
+#include <sstream>
+#include "log/Logger.h"
+
 namespace comm_layer
 {
     CommSocketEndpoint::CommSocketEndpoint(const int socket_fd) : socket_fd_(socket_fd), socket_open_(true)
@@ -62,7 +65,10 @@ namespace comm_layer
             total_bytes_sent += bytes_sent;
         }
         while( total_bytes_sent < msg_ssize );
-        std::cout << "Bytes send: " << total_bytes_sent << std::endl;
+
+        std::ostringstream log_stream;
+        log_stream << "Bytes send: " << total_bytes_sent;
+        log::Logger::getInstance().logDebug( log_stream.str() );
     }
 
     void CommSocketEndpoint::receiveNBytes(char *buffer, std::size_t buffer_size) const

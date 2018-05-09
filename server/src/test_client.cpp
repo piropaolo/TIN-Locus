@@ -145,8 +145,9 @@ int main(int argc, char** argv)
 
     // Receive the Welcome Message from the server. Ends with the NULL character.
     char message_buffer[MSG_BUF_SIZE];
-    ssize_t bytes_received = 0;
+//ssize_t bytes_received = 0;
     //bool first_msg_part = true;
+/*
     do
     {
         bytes_received = recv(sock_fd, message_buffer, MSG_BUF_SIZE, 0);
@@ -171,7 +172,7 @@ int main(int argc, char** argv)
     }
     while( message_buffer[bytes_received - 1] != '\0' ); // not a complete message yet
     // bytes_received <= MSG_BUF_SIZE
-
+*/
 
     pthread_t reading_thread_id;
     pthread_attr_t thread_attributes;
@@ -234,7 +235,7 @@ int main(int argc, char** argv)
     std::cout << "--Closing client--" << std::endl;
     std::this_thread::sleep_for(std::chrono::seconds(1));
 
-CLOSE_SOCKET:
+//CLOSE_SOCKET:
     if( close(sock_fd) != 0 )
     {
         std::cerr << "Error closing socket\n"
