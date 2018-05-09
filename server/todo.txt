@@ -1,0 +1,85 @@
+- change C-style casts to C++ cast operators
+
+- htons
+
+- split the code up into functions / modules
+
+- test recv flags
+
+
+DESIGN PATTERNS:
+- Visitor pattern for Message
+- Strategy for ClientManager (strategy of sending - to peers / to all clients / only echo)
+
+
+CONSOLE ARGUMENTS:
+- add server listening port as a commandline argument
+
+
+COMMUNICATION THREADS:
+- close socket file descriptor on error before exiting (perform clean-up)
+
+
+ACCEPT WHILE-LOOP:
+- continue to next iteration on connection error
+- exit on major errors
+
+
+C, Unix:
+- conditional compilation depending on the target platform (Linux, Windows)
+
+
+C++:
+- throw exceptions on errors
+    and make a common socket clean-up-point
+
+- conditional compilation depending on the available C++ standard version
+
+- smart pointers with allocation instead of new, delete
+
+- TEST, CHECK const references as function arguments. Can such objects call non-const member functions? 
+
+
+DYNAMIC MEMORY ALLOCATION:
+- test program for memory leaks using valgrind
+
+
+SIGNALS:
+- clean-up when catched SIGINT (?) (call dtors, close, ...)
+
+
+TESTS:
+- kill (sigkil) applications (server, client) at different points of execution
+
+- e.g. server killed != server performed an orderly shutdown !!
+
+
+UNIT TESTS:
+- BlockingMessageQueue
+
+
+TEST SCRIPTS:
+- write bash client-server testing script
+
+- unit testing with mocks
+
+SECURITY:
+- escape special (e.g. console control) characters from client input!
+
+
+MAKEFILE:
+- -pthread ? C++11 threads
+- add compiler flags as flags in makefile
+- add linking with libraries (-pthread on Unix) [at the right place of the compile command!]
+
+- should recompilation of server and client depend on changes in signal_handlers.h?
+
+
+- add -std=c++11 / -std=c++0x
+- -std=c++14
+- -fext-numeric-literals ??
+
+
+TCP PACKETS:
+- sniff using WireShark +gdb instruction/function stepping 
+    +or sleep's in the programs (which system function sends what)
