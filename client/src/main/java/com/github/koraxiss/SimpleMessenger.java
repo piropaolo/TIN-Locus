@@ -34,6 +34,7 @@ public class SimpleMessenger implements Messenger {
         byte[] buffer = new byte[100];
         receive(buffer, 0, 1);
         int type = buffer[0];
+        System.out.println(type);
         PacketType packetType = PacketType.packetTypeMap.get(type);
         switch (packetType) {
             case _OPEN:

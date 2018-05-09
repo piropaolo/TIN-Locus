@@ -3,12 +3,10 @@ package com.github.koraxiss;
 public class Message {
     private MessageType type;
     private Packet packet;
-    private String string;
 
-    public Message(MessageType type, Packet packet, String string) {
+    public Message(MessageType type, Packet packet) {
         this.type = type;
         this.packet = packet;
-        this.string = string;
     }
 
     public Packet getPacket() {
@@ -17,10 +15,6 @@ public class Message {
 
     public MessageType getType() {
         return type;
-    }
-
-    public String getString() {
-        return string;
     }
 
     public enum MessageType {
