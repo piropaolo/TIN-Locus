@@ -5,6 +5,9 @@
 
 #include <utility>
 
+#include <sstream>
+#include "log/Logger.h"
+
 extern "C" {
   #include <unistd.h> // standard symbolic constants and types (e.g. STDOUT_FILENO)
 }
@@ -63,17 +66,8 @@ namespace clients
 
     void ClientManager::sender_thread_routine()
     {
-        //pthread_cleanup_push(sender_thread_cleanup_handler, (void *) NULL);
-
-        char weclome_message[] = "\n"
-                                "This is a welcome message.\n"
-                                "Hello. You've just connected to the TestTcp server.\n"
-                                "\n";
-                                //"Your client id is " 
         try
-        {
-            comm_endpoint_ptr_->sendNBytes(weclome_message, sizeof weclome_message);   
-
+        { 
             while( true )
             {
                 // block untill there is a message to send to the client
@@ -107,6 +101,7 @@ namespace clients
     
     void ClientManager::receiver_thread_routine() /*const*/
     {
+        std::ostringstream log_stream;
         char message_buffer[MSG_BUF_SIZE];
         int bytes_received = 0;
 
@@ -120,12 +115,13 @@ namespace clients
                 if( bytes_received == 0 ) // TODO temporary
                     break;
 
-                std::cout << bytes_received << " bytes received. Message:\n" <<
-                            "> ";
-                std::cout.write(message_buffer, bytes_received);
-                std::cout << std::endl;
+                log_stream << bytes_received << " bytes received. Message:\n" <<
+                             "> ";
+                log_stream.write(message_buffer, bytes_received);
+                log::Logger::getInstance().logDebug( log_stream.str() );
+                log_stream.str("");
 
-                this->sendToPeersInSession( messages::Message(message_buffer, bytes_received) );
+                this->sendToAllInSession( messages::Message(message_buffer, bytes_received) );
             }
             while( true ); // temporary; need exception for connection shutdown -> then: while( true ) {..}
             // TODO without connection-close exception server will send 0-byte-length message to client when he disconnects

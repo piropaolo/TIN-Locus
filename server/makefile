@@ -1,7 +1,7 @@
 all : server test_client
 
-server : server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o
-	g++ -o server server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o -pthread
+server : server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o Logger.o Colour.o
+	g++ -o server server.o signal_handlers.o SocketEndpoint.o ClientManager.o BlockingMessageQueue.o SessionManager.o Logger.o Colour.o -pthread
 
 server.o : src/server.cpp src/signal_handlers.h src/SocketEndpoint.h src/ClientManager.h src/SessionManager.h
 	g++ -c src/server.cpp -std=c++14
@@ -21,6 +21,12 @@ BlockingMessageQueue.o : src/BlockingMessageQueue.cpp src/BlockingMessageQueue.h
 ClientManager.o : src/ClientManager.cpp src/ClientManager.h src/SocketEndpoint.h src/BlockingMessageQueue.h src/SessionManager.h
 	g++ -c src/ClientManager.cpp -std=c++14 -pthread
 
+Logger.o : src/log/Logger.cpp src/log/Logger.h
+	g++ -c src/log/Logger.cpp -std=c++14
+
+Colour.o : src/log/Colour.cpp src/log/Colour.h
+	g++ -c src/log/Colour.cpp -std=c++14
+
 
 test_client : test_client.o signal_handlers.o
 	g++ -o test_client test_client.o signal_handlers.o -pthread
@@ -32,4 +38,4 @@ test_client.o : src/test_client.cpp
 clean :
 	rm -f server server.o
 	rm -f test_client test_client.o
-	rm -f signal_handlers.o SocketEndpoint.o BlockingMessageQueue.o ClientManager.o SessionManager.o
+	rm -f signal_handlers.o SocketEndpoint.o BlockingMessageQueue.o ClientManager.o SessionManager.o Logger.o Colour.o
