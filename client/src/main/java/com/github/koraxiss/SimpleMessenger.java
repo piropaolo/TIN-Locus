@@ -28,12 +28,14 @@ public class SimpleMessenger implements Messenger {
 
     public void send(Packet packet) throws IOException {
         send(packet.getBuffer(), 0, packet.getBuffer().length);
+        System.out.println("Received packet " + packet.getType());
     }
 
     public Packet receive() throws IOException {
         byte[] buffer = new byte[100];
         receive(buffer, 0, 1);
         int type = buffer[0];
+        System.out.println("Received packet " + PacketType.packetTypeMap.get(type));
         PacketType packetType = PacketType.packetTypeMap.get(type);
         switch (packetType) {
             case _OPEN:
