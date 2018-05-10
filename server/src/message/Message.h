@@ -2,28 +2,31 @@
 #define LOCUS_MESSAGE_H
 
 #include <memory>
+#include <string>
+#include <sys/socket.h>
 #include "ErrorType.h"
+#include "BlockingQueue.h"
 #include "packet/Packet.h"
+#include "receiver/Buffer.h"
+#include "receiver/EPollEvent.h"
 
 namespace message {
-    class Message {
-    public:
+    struct Message {
         enum Type : unsigned int {
             Empty,
             Error,
             Close,
-            Packet
+            AddSocket,
+            EraseSocket
         };
 
         Message() = default;
         explicit Message(const Type &type);
-        explicit Message(const ErrorType &errorType);
-        explicit Message(const packet::Packet &packetMsg);
-        explicit Message(packet::Packet &&packetMsg);
 
-        Type getType() const;
-        const ErrorType &getErrorType() const;
-        const packet::Packet &getPacketMsg() const;
+        Message(const Message&) = delete;
+        Message(Message&&) = default;
+        Message &operator=(const Message&) = delete;
+        Message &operator=(Message&&) = default;
 
         bool operator==(const Message &rhs) const;
         bool operator!=(const Message &rhs) const;
@@ -33,10 +36,15 @@ namespace message {
         bool operator<=(const Message &rhs) const;
         bool operator>=(const Message &rhs) const;
 
-    private:
+        const std::string toString() const;
+
         Type type = Empty;
-        ErrorType errorType = ErrorType::Undefined;
-        packet::Packet packetMsg = packet::Packet(packet::PacketType::UNDEFINED);
+
+        std::unique_ptr<ErrorType> errorType;
+        std::unique_ptr<int> socketID;
+        std::unique_ptr<sockaddr> sock_addr;
+        std::unique_ptr<EPollEvent *> ePollEvent;
+        std::unique_ptr<BlockingQueue<Message> *> blockingQueue;
     };
 }
 

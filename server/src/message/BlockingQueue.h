@@ -69,13 +69,13 @@ namespace message {
     T BlockingQueue<T>::popWithoutBlocking() {
         T ret;
         if (!priority.empty()) {
-            ret = *priority.begin();
-            priority.erase(priority.begin());
+//            ret = std::move(*priority.begin());
+//            priority.erase(priority.begin());
         } else {
-            ret = queue.front();
+            ret = std::move(queue.front());
             queue.pop();
         }
-        return ret;
+        return std::move(ret);
     }
 
     template<class T>
@@ -87,7 +87,7 @@ namespace message {
             ret = popWithoutBlocking();
         }
         fullCondition.notify_one();
-        return ret;
+        return std::move(ret);
     }
 
     template<class T>
@@ -105,7 +105,7 @@ namespace message {
         if (notify) {
             fullCondition.notify_one();
         }
-        return ret;
+        return std::move(ret);
     }
 
     template<class T>

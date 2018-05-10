@@ -1,35 +1,19 @@
 #include "Message.h"
+#include <unistd.h>
+#include "log/Logger.h"
 
 using namespace packet;
 
 namespace message {
     Message::Message(const Message::Type &type) : type(type) {}
 
-    Message::Message(const ErrorType &errorType)
-            : type(Type::Error), errorType(errorType) {}
-
-    Message::Message(const packet::Packet &packetMsg)
-            : type(Type::Packet), packetMsg(packetMsg) {}
-
-    Message::Message(packet::Packet &&packetMsg)
-            : type(Type::Packet), packetMsg(std::move(packetMsg)) {}
-
-    Message::Type Message::getType() const {
-        return type;
-    }
-
-    const ErrorType &Message::getErrorType() const {
-        return errorType;
-    }
-
-    const Packet &Message::getPacketMsg() const {
-        return packetMsg;
-    }
-
     bool Message::operator==(const Message &rhs) const {
-        return type == rhs.type &&
-               errorType == rhs.errorType &&
-               packetMsg == rhs.packetMsg;
+        if(errorType && rhs.errorType) {
+            return type == rhs.type &&
+                   *errorType == *rhs.errorType;
+        } else {
+            return type == rhs.type;
+        }
     }
 
     bool Message::operator!=(const Message &rhs) const {
@@ -39,13 +23,14 @@ namespace message {
     bool Message::operator<(const Message &rhs) const {
         if (type < rhs.type)
             return true;
-        if (rhs.type < type)
+
+        if(errorType && rhs.errorType) {
+            if (rhs.type < type)
+                return false;
+            return *errorType < *rhs.errorType;
+        } else {
             return false;
-        if (errorType < rhs.errorType)
-            return true;
-        if (rhs.errorType < errorType)
-            return false;
-        return packetMsg < rhs.packetMsg;
+        }
     }
 
     bool Message::operator>(const Message &rhs) const {
@@ -58,5 +43,20 @@ namespace message {
 
     bool Message::operator>=(const Message &rhs) const {
         return !(*this < rhs);
+    }
+
+    const std::string Message::toString() const {
+        switch (type) {
+            case Empty:
+                return std::string("Empty");
+            case Error:
+                return std::string("Error");
+            case Close:
+                return std::string("Close");
+            case AddSocket:
+                return std::string("AddSocket");
+            case EraseSocket:
+                return std::string("EraseSocket");
+        }
     }
 }
