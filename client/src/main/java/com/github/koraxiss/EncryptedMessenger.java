@@ -1,5 +1,7 @@
 package com.github.koraxiss;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import java.io.IOException;
 
 public class EncryptedMessenger implements Messenger {
@@ -9,25 +11,32 @@ public class EncryptedMessenger implements Messenger {
         this.simpleMessenger = simpleMessenger;
     }
 
-    public void send(byte[] buffer, int offset, int n) throws IOException {
-        CipherModule.encrypt(buffer, offset, n);
-        simpleMessenger.send(buffer, offset, n);
+    public void send(byte[] buffer, int n) throws IOException {
+        try {
+            CipherModule.encrypt(buffer, 0, n);
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
+        simpleMessenger.send(buffer, n);
     }
 
-    public void receive(byte[] buffer, int offset, int n) throws IOException {
-        simpleMessenger.receive(buffer, offset, n);
-        CipherModule.decrypt(buffer, offset, n);
+    public int receive(byte[] buffer, int n) throws IOException {
+        int i = simpleMessenger.receive(buffer, n);
+        try {
+            CipherModule.decrypt(buffer, 0, i);
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
+        return i;
     }
 
     public void send(Packet packet) throws IOException {
         byte[] buffer = packet.getBuffer();
-        send(buffer, 0, 1);
-        send(buffer, 1, buffer.length - 1);
+        send(buffer, buffer.length);
     }
 
-    public Packet receive() throws IOException {
-        byte[] buffer = new byte[100];
-        receive(buffer, 0, 1);
+    public Packet receive(byte[] buffer) throws IOException {
+        int i = receive(buffer, 0);
         int type = buffer[0];
         PacketType packetType = PacketType.packetTypeMap.get(type);
         switch (packetType) {
@@ -36,21 +45,21 @@ public class EncryptedMessenger implements Messenger {
             case _PUBLIC_KEY:
                 return null;
             case _SYMMETRIC_KEY:
+                byte[] key = new byte[i - 1];
+                System.arraycopy(buffer, 1, key, 0, i - 1);
+                Packet packet = new Packet(PacketType._SYMMETRIC_KEY);
+                packet.setArg1(Converter.byteToString(key));
+                return packet;
             case _TEST_KEY:
-            case _ACK_ERR:
-                return new Packet(PacketType._ACK_ERR);
-            case _ACK_OK:
-                return new Packet(PacketType._ACK_OK);
-            case _CLOSE:
-                return new Packet(PacketType._CLOSE);
-            case _ALIVE:
-                return new Packet(PacketType._ALIVE);
+                byte[] test = new byte[i - 1];
+                System.arraycopy(buffer, 1, test, 0, i - 1);
+                Packet packet1 = new Packet(PacketType._TEST_KEY);
+                packet1.setArg1(Converter.byteToString(test));
+                return packet1;
             default:
-                return null;
+                Packet otherPacket = new Packet(PacketType._OTHER);
+                otherPacket.setSize(i);
+                return otherPacket;
         }
-    }
-
-    public static void init() throws IOException {
-
     }
 }

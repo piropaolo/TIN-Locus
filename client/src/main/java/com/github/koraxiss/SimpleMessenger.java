@@ -18,22 +18,30 @@ public class SimpleMessenger implements Messenger {
         this.socket.close();
     }
 
-    public void send(byte[] buffer, int offset, int n) throws IOException {
-        output.write(buffer, offset, n);
+    public void send(byte[] buffer, int n) throws IOException {
+        byte[] message = new byte[buffer.length + 1];
+        short size = (short) (buffer.length + 1);
+        byte sizeByte = (byte)size;
+        message[0] = sizeByte;
+        System.arraycopy(buffer, 0, message, 1, buffer.length);
+        output.write(message, 0, message.length);
     }
 
-    public void receive(byte[] buffer, int offset, int n) throws IOException {
-        input.read(buffer, offset, n);
+    public int receive(byte[] buffer, int n) throws IOException {
+        input.read(buffer, 0, 1);
+        byte size = buffer[0];
+        short s = size;
+        int i = input.read(buffer, 0, s - 1);
+        return i;
     }
 
     public void send(Packet packet) throws IOException {
-        send(packet.getBuffer(), 0, packet.getBuffer().length);
-        System.out.println("Received packet " + packet.getType());
+        send(packet.getBuffer(), packet.getBuffer().length);
+        System.out.println("Sent packet " + packet.getType());
     }
 
-    public Packet receive() throws IOException {
-        byte[] buffer = new byte[100];
-        receive(buffer, 0, 1);
+    public Packet receive(byte[] buffer) throws IOException {
+        int i = receive(buffer, 0);
         int type = buffer[0];
         System.out.println("Received packet " + PacketType.packetTypeMap.get(type));
         PacketType packetType = PacketType.packetTypeMap.get(type);
@@ -51,9 +59,5 @@ public class SimpleMessenger implements Messenger {
             default:
                 return null;
         }
-    }
-
-    public void init() {
-
     }
 }
