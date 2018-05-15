@@ -6,17 +6,18 @@ public class Packet {
     private Object arg2;
     private Object arg3;
     private Object arg4;
+    private int size;
 
     public Packet(PacketType type) {
         this.type = type;
     }
 
-    public PacketType getType() {
-        return this.type;
+    public int getSize() {
+        return size;
     }
 
-    public int getSize() {
-        return 0;
+    public PacketType getType() {
+        return this.type;
     }
 
     public byte[] getBuffer() {
@@ -33,11 +34,9 @@ public class Packet {
                 bytes[0] = b;
                 return bytes;
             case _PUBLIC_KEY:
-                return bufferPublicKey();
             case _SYMMETRIC_KEY:
-                return bufferSymmetricKey();
             case _TEST_KEY:
-                return bufferTestKey();
+                return bufferEncryptedPacket();
             case _SET_NAME:
                 return bufferSizeName();
             case _ADD_FOLLOWER:
@@ -55,6 +54,15 @@ public class Packet {
             default:
                 return null;
         }
+    }
+
+    private byte[] bufferEncryptedPacket() {
+        byte[] bytes = new byte[1 + ((String) arg1).length()];
+        bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
+        byte[] string = Converter.stringToByte((String) arg1);
+        for (int i = 0; i < string.length; ++i)
+            bytes[i + 1] = string[i];
+        return bytes;
     }
 
     private byte[] bufferLocation() {
@@ -91,39 +99,25 @@ public class Packet {
     }
 
     private byte[] bufferNewFollowed() {
-        byte[] bytes = new byte[1 + 2 + 1 + (int) this.getArg2()];
+        byte[] bytes = new byte[1 + 2 + ((String) this.getArg2()).length()];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
-        byte[] shor = new byte[2];
-        shor = Converter.shortToByte((short)this.getArg1());
+        byte[] shor;
+        shor = Converter.shortToByte((short) this.getArg1());
         bytes[1] = shor[0];
         bytes[2] = shor[1];
-        bytes[3] = Converter.intToByte((int) this.getArg2());
         byte[] string = Converter.stringToByte((String) this.getArg2());
         for (int i = 0; i < string.length; ++i)
-            bytes[4 + i] = string[i];
+            bytes[3 + i] = string[i];
         return bytes;
     }
 
     private byte[] bufferSizeName() {
-        byte[] bytes = new byte[1 + 1 + (int) this.getArg1()];
+        byte[] bytes = new byte[1 + ((String) this.getArg1()).length()];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
-        bytes[1] = Converter.intToByte((int) this.getArg1());
-        byte[] string = Converter.stringToByte((String) this.getArg2());
+        byte[] string = Converter.stringToByte((String) this.getArg1());
         for (int i = 0; i < string.length; ++i)
-            bytes[2 + i] = string[i];
+            bytes[1 + i] = string[i];
         return bytes;
-    }
-
-    private byte[] bufferTestKey() {
-        return new byte[0];
-    }
-
-    private byte[] bufferSymmetricKey() {
-        return new byte[0];
-    }
-
-    private byte[] bufferPublicKey() {
-        return new byte[0];
     }
 
     public Object getArg1() {
@@ -156,5 +150,9 @@ public class Packet {
 
     public void setArg4(Object arg4) {
         this.arg4 = arg4;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 }

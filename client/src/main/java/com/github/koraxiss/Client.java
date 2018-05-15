@@ -5,10 +5,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 public class Client {
-    private SimpleMessenger simpleMessenger;
-    private EncryptedMessenger encryptedMessenger;
-    private ProtocolMessenger protocolMessenger;
-    private Messenger activeMessenger;
+    private LayerManager layerManager;
     private BlockingQueue<Message> childMessages;
     private BlockingQueue<Message> sendInstructions;
     private Thread readerThread;
@@ -16,10 +13,7 @@ public class Client {
     private boolean running;
 
     public Client() throws IOException {
-        simpleMessenger = new SimpleMessenger("0.0.0.0", 9999);
-        encryptedMessenger = new EncryptedMessenger(simpleMessenger);
-        protocolMessenger = new ProtocolMessenger(encryptedMessenger);
-        activeMessenger = simpleMessenger;
+        layerManager = new LayerManager();
         childMessages = new LinkedBlockingQueue<>();
         sendInstructions = new LinkedBlockingQueue<>();
         readerThread = new Thread(new ReaderThread());
@@ -32,21 +26,20 @@ public class Client {
         writerThread.start();
         readerThread.start();
         Message message;
-        try {
-            sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._OPEN)));
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+//        try {
+//            sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._OPEN)));
+//        } catch (InterruptedException e) {
+//            e.printStackTrace();
+//        }
         while (running) {
             try {
 //                message = childMessages.poll();
                 message = childMessages.take();
-                if (message != null) {
-                    if (message.getType() == Message.MessageType.PACKET)
-                        sendInstructions.put(message);
-                    else
-                        stop();
-                }
+                if (message.getType() == Message.MessageType.PACKET) {
+                    System.out.println((String) message.getPacket().getArg1());
+                    sendInstructions.put(message);
+                } else
+                    stop();
                 Thread.sleep(100);
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -60,7 +53,7 @@ public class Client {
         writerThread.interrupt();
         System.out.println("Threads closed");
         try {
-            simpleMessenger.closeSocket();
+            layerManager.closeSocket();
             System.out.println("Socket closed");
         } catch (IOException e) {
             e.printStackTrace();
@@ -74,9 +67,12 @@ public class Client {
             Packet packet = null;
             while (running) {
                 try {
-                    packet = simpleMessenger.receive();
+                    byte[] bytes = new byte[5];
+                    layerManager.receive();
+//                    packet = layerManager.receive();
+                    packet = new Packet(PacketType._OPEN);
+                    packet.setArg1(Converter.byteToString(bytes));
                     childMessages.put(new Message(Message.MessageType.PACKET, packet));
-//                    childMessages.put(new Message(Message.MessageType.PACKET, packet, Converter.byteToString(bytes)));
                     Thread.sleep(500);
                 } catch (IOException e1) {
 //                    e1.printStackTrace();
@@ -100,11 +96,10 @@ public class Client {
             Message message = null;
             while (running) {
                 try {
-//                    message = sendInstructions.poll();
                     message = sendInstructions.take();
                     if (message.getType() == Message.MessageType.PACKET) {
                         packet = message.getPacket();
-                        activeMessenger.send(packet);
+                        layerManager.send(packet);
                     }
                     Thread.sleep(500);
                 } catch (IOException e1) {
