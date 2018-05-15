@@ -28,8 +28,9 @@ public class CipherModule {
     private static State state;
 
     enum State{
-        ESTABLISHING_CONNECTION,
-        CIPHERING_DATA
+        SERVER_PUBLIC,
+        CLIENT_PRIVATE_SERVER_PUBLIC,
+        SESSION
     }
 
     static KeyPair generateKeyPair() throws NoSuchAlgorithmException, IOException {
@@ -86,20 +87,20 @@ public class CipherModule {
         return keyPair;
     }
 
-    public static void printKeyPair(){
+    static void printKeyPair(){
         System.out.println(keyPair.getPublic().toString());
         System.out.println(keyPair.getPrivate().toString());
     }
 
-    public static void loadServerPublic(){
+    static void loadServerPublic(){
 
     }
 
-    public static void loadSessionKey(){
+    static void loadSessionKey(){
 
     }
 
-    public static void initializeClientCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+    static void initializeClientCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
         encryptClientPrivate = Cipher.getInstance("RSA");
         decryptClientPrivate = Cipher.getInstance("RSA");
 
@@ -107,7 +108,7 @@ public class CipherModule {
         decryptClientPrivate.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
     }
 
-    public static void initializeServerCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+    static void initializeServerCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
         encryptServerPublic = Cipher.getInstance("RSA");
         decryptServerPublic = Cipher.getInstance("RSA");
 
@@ -115,7 +116,7 @@ public class CipherModule {
         decryptServerPublic.init(Cipher.DECRYPT_MODE, serverPublicKey);
     }
 
-    public static void initializeSessionCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
+    static void initializeSessionCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
         encryptSession = Cipher.getInstance("AES");
         decryptSession = Cipher.getInstance("AES");
 
@@ -124,19 +125,37 @@ public class CipherModule {
     }
 
 
-    public static byte[] encrypt(byte[] buffer, int offset, int n) throws BadPaddingException, IllegalBlockSizeException {
-        return encryptClientPrivate.doFinal(buffer, offset, n);
+    static byte[] encrypt(byte[] buffer, int offset, int n) throws BadPaddingException, IllegalBlockSizeException {
+        switch (state){
+            case SERVER_PUBLIC:
+                return encryptServerPublic.doFinal(buffer, offset, n);
+            case CLIENT_PRIVATE_SERVER_PUBLIC:
+                byte[] temp = encryptClientPrivate.doFinal(buffer, offset, n);
+                return encryptServerPublic.doFinal(temp);
+            case SESSION:
+                return encryptSession.doFinal(buffer, offset, n);
+            default:
+                throw new RuntimeException("CipherModule state not known.");
+        }
     }
 
-    public static byte[] decrypt(byte[] buffer, int offset, int n) throws BadPaddingException, IllegalBlockSizeException {
-        return decryptServerPublic.doFinal(buffer, offset, n);
+    static byte[] decrypt(byte[] buffer, int offset, int n) throws BadPaddingException, IllegalBlockSizeException {
+        switch (state){
+            case CLIENT_PRIVATE_SERVER_PUBLIC:
+                byte[] temp = decryptClientPrivate.doFinal(buffer, offset, n);
+                return decryptServerPublic.doFinal(temp);
+            case SESSION:
+                return encryptSession.doFinal(buffer, offset, n);
+            default:
+                throw new RuntimeException("CipherModule state not known.");
+        }
     }
 
-    public static State getState() {
+    static State getState() {
         return state;
     }
 
-    public static void setState(State state) {
+    static void setState(State state) {
         CipherModule.state = state;
     }
 }
