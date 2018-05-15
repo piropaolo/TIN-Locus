@@ -23,8 +23,7 @@ public class SimpleMessenger implements Messenger {
         short size = (short) (buffer.length + 1);
         byte sizeByte = (byte)size;
         message[0] = sizeByte;
-        for(int i = 0; i < buffer.length; ++i)
-            message[i + 1] = buffer[i];
+        System.arraycopy(buffer, 0, message, 1, buffer.length);
         output.write(message, 0, message.length);
     }
 

@@ -60,8 +60,7 @@ public class Packet {
         byte[] bytes = new byte[1 + ((String) arg1).length()];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
         byte[] string = Converter.stringToByte((String) arg1);
-        for (int i = 0; i < string.length; ++i)
-            bytes[i + 1] = string[i];
+        System.arraycopy(string, 0, bytes, 1, string.length);
         return bytes;
     }
 
@@ -69,17 +68,13 @@ public class Packet {
         byte[] bytes = new byte[27];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
         byte[] shor = Converter.shortToByte((short) this.getArg1());
-        for (int i = 0; i < shor.length; ++i)
-            bytes[1 + i] = shor[i];
+        System.arraycopy(shor, 0, bytes, 1, shor.length);
         byte[] lat = Converter.floatToByte((long) this.getArg2());
-        for (int i = 0; i < lat.length; ++i)
-            bytes[3 + i] = lat[i];
+        System.arraycopy(lat, 0, bytes, 3, lat.length);
         byte[] lon = Converter.floatToByte((long) this.getArg3());
-        for (int i = 0; i < lon.length; ++i)
-            bytes[11 + i] = lon[i];
+        System.arraycopy(lon, 0, bytes, 11, lon.length);
         byte[] t = Converter.longToByte((long) this.getArg4());
-        for (int i = 0; i < t.length; ++i)
-            bytes[19 + i] = t[i];
+        System.arraycopy(t, 0, bytes, 19, t.length);
         return bytes;
     }
 
@@ -87,14 +82,11 @@ public class Packet {
         byte[] bytes = new byte[25];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
         byte[] lat = Converter.floatToByte((long) this.getArg1());
-        for (int i = 0; i < lat.length; ++i)
-            bytes[1 + i] = lat[i];
+        System.arraycopy(lat, 0, bytes, 1, lat.length);
         byte[] lon = Converter.floatToByte((long) this.getArg2());
-        for (int i = 0; i < lon.length; ++i)
-            bytes[9 + i] = lon[i];
+        System.arraycopy(lon, 0, bytes, 9, lon.length);
         byte[] dt = Converter.longToByte((long) this.getArg3());
-        for (int i = 0; i < dt.length; ++i)
-            bytes[17 + i] = dt[i];
+        System.arraycopy(dt, 0, bytes, 17, dt.length);
         return bytes;
     }
 
@@ -106,8 +98,7 @@ public class Packet {
         bytes[1] = shor[0];
         bytes[2] = shor[1];
         byte[] string = Converter.stringToByte((String) this.getArg2());
-        for (int i = 0; i < string.length; ++i)
-            bytes[3 + i] = string[i];
+        System.arraycopy(string, 0, bytes, 3, string.length);
         return bytes;
     }
 
@@ -115,8 +106,7 @@ public class Packet {
         byte[] bytes = new byte[1 + ((String) this.getArg1()).length()];
         bytes[0] = Converter.intToByte(PacketType.reversedMap.get(type));
         byte[] string = Converter.stringToByte((String) this.getArg1());
-        for (int i = 0; i < string.length; ++i)
-            bytes[1 + i] = string[i];
+        System.arraycopy(string, 0, bytes, 1, string.length);
         return bytes;
     }
 
