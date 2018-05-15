@@ -38,10 +38,9 @@ public class ProtocolMessenger implements Messenger {
             case _SET_NAME:
                 packet = new Packet(PacketType._OPEN_PROT);
                 byte[] name = new byte[size - 1];
-                for (int i = 0; i < size - 1; ++i)
-                    name[i] = buffer[i + 1];
+                System.arraycopy(buffer, 1, name, 0, size - 1);
                 String string = Converter.byteToString(name);
-                packet.setArg1((Object) string);
+                packet.setArg1(string);
                 return packet;
             case _ADD_FOLLOWER:
                 return null;
@@ -51,22 +50,20 @@ public class ProtocolMessenger implements Messenger {
                 id[0] = buffer[1];
                 id[1] = buffer[2];
                 short sId = Converter.byteToShort(id);
-                packet1.setArg1((Object) sId);
+                packet1.setArg1(sId);
                 byte[] name1 = new byte[size - 3];
-                for(int i = 0; i < size -3; ++i)
-                    name1[i] = buffer[i + 3];
+                System.arraycopy(buffer, 3, name1, 0, size - 3);
                 String string1 = Converter.byteToString(name1);
-                packet1.setArg2((Object) string1);
+                packet1.setArg2(string1);
                 return packet1;
             case _REMOVE_FOLLOWER:
                 return null;
             case _REMOVE_FOLLOWED:
                 Packet packet2 = new Packet(PacketType._REMOVE_FOLLOWED);
                 byte[] name2 = new byte[size - 1];
-                for(int i = 0; i < size -3; ++i)
-                    name2[i] = buffer[i + 1];
+                System.arraycopy(buffer, 1, name2, 0, size - 3);
                 String string2 = Converter.byteToString(name2);
-                packet2.setArg1((Object) string2);
+                packet2.setArg1(string2);
                 return packet2;
             case _MY_LOCATION:
                 return null;
@@ -76,22 +73,19 @@ public class ProtocolMessenger implements Messenger {
                 id1[0] = buffer[1];
                 id1[1] = buffer[2];
                 short sId1 = Converter.byteToShort(id1);
-                packet3.setArg1((Object) sId1);
+                packet3.setArg1(sId1);
                 byte[] lat = new byte[8];
-                for(int i = 0; i < 8; ++i)
-                    lat[i] = buffer[i + 3];
+                System.arraycopy(buffer, 3, lat, 0, 8);
                 float latitude = Converter.byteToFloat(lat);
-                packet3.setArg2((Object) latitude);
+                packet3.setArg2(latitude);
                 byte[] lon = new byte[8];
-                for(int i = 0; i < 8; ++i)
-                    lon[i] = buffer[i + 11];
+                System.arraycopy(buffer, 11, lon, 0, 8);
                 float longitude = Converter.byteToFloat(lon);
-                packet3.setArg3((Object) longitude);
+                packet3.setArg3(longitude);
                 byte[] t = new byte[8];
-                for(int i = 0; i < 8; ++i)
-                    t[i] = buffer[i + 19];
+                System.arraycopy(buffer, 19, t, 0, 8);
                 long time = Converter.byteToLong(t);
-                packet3.setArg4((Object) time);
+                packet3.setArg4(time);
                 return packet3;
             case _ACK_ERR:
                 return new Packet(PacketType._ACK_ERR);
