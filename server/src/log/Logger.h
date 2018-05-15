@@ -30,6 +30,8 @@ namespace log {
         std::ostream *output = &std::cerr;
         bool shouldShowDebug = true;
         std::mutex loggerMutex;
+
+        std::string getTime();
     };
 
 } // end log namespace

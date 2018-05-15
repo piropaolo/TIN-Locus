@@ -8,19 +8,14 @@ namespace log {
     void Logger::logMessage(std::string message) {
         std::lock_guard<std::mutex> guard(loggerMutex);
 
-        auto time = std::chrono::system_clock::now();
-        std::time_t timeT = std::chrono::system_clock::to_time_t(time);
-
-        *output << "LOG: " << std::ctime(&timeT) << "  " << message << std::endl;
+        *output << "LOG: " << getTime() << "  " << message << std::endl;
     }
 
     void Logger::logError(std::string error) {
         std::lock_guard<std::mutex> guard(loggerMutex);
 
-        auto time = std::chrono::system_clock::now();
-        std::time_t timeT = std::chrono::system_clock::to_time_t(time);
-
-        *output << Colour(Colour::Error) << "ERROR: " << std::ctime(&timeT) << "  " << error
+        *output << Colour(Colour::Error)
+                << "ERROR: " << getTime() << "  " << error
                 << Colour(Colour::White) << std::endl;
     }
 
@@ -30,10 +25,8 @@ namespace log {
 
         std::lock_guard<std::mutex> guard(loggerMutex);
 
-        auto time = std::chrono::system_clock::now();
-        std::time_t timeT = std::chrono::system_clock::to_time_t(time);
-
-        *output << Colour(Colour::Warning) << "DEBUG: " << std::ctime(&timeT) << "  " << debug
+        *output << Colour(Colour::Warning)
+                << "DEBUG: " << getTime() << "  " << debug
                 << Colour(Colour::White) << std::endl;
     }
 
@@ -42,7 +35,14 @@ namespace log {
     }
 
     void Logger::setOutputStream(std::ostream *output) {
+        std::lock_guard<std::mutex> guard(loggerMutex);
         Logger::output = output;
+    }
+
+    std::string Logger::getTime() {
+        auto time = std::chrono::system_clock::now();
+        std::time_t timeT = std::chrono::system_clock::to_time_t(time);
+        return std::string(std::ctime(&timeT)).substr(0, std::string(std::ctime(&timeT)).size() - 1);
     }
 
 } // end log namespace
