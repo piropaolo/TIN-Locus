@@ -1,5 +1,7 @@
 package com.github.koraxiss;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 import java.io.IOException;
 
 public class EncryptedMessenger implements Messenger {
@@ -10,13 +12,21 @@ public class EncryptedMessenger implements Messenger {
     }
 
     public void send(byte[] buffer, int offset, int n) throws IOException {
-        CipherModule.encrypt(buffer, offset, n);
+        try {
+            CipherModule.encrypt(buffer, offset, n);
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
         simpleMessenger.send(buffer, offset, n);
     }
 
     public void receive(byte[] buffer, int offset, int n) throws IOException {
         simpleMessenger.receive(buffer, offset, n);
-        CipherModule.decrypt(buffer, offset, n);
+        try {
+            CipherModule.decrypt(buffer, offset, n);
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
     }
 
     public void send(Packet packet) throws IOException {
