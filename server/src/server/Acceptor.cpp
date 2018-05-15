@@ -45,7 +45,7 @@ Acceptor::Acceptor(const uint16_t &port, message::BlockingQueue<message::Message
     //nasluchiwanie na gniezdzie
     listen(socketfd, 5);
 
-    Logger::getInstance().logMessage("Acceptor: New listener: " + std::to_string(socketfd));
+    Logger::getInstance().logMessage("Acceptor: My fd is " + std::to_string(socketfd));
 }
 
 bool Acceptor::setNonBlock(int &sfd) {
@@ -79,8 +79,8 @@ void Acceptor::recvData() {
     }
     Logger::getInstance().logMessage("Acceptor: New connection: " + std::to_string(in_fd));
 
-    Message msg(Message::AddSocket);
-    msg.socketID = std::make_unique<int>(in_fd);
+    Message msg(Message::AddClient);
+    msg.fileDescriptor = std::make_unique<int>(in_fd);
     msg.sock_addr = std::make_unique<sockaddr>(in_addr);
     blockingQueue->push(std::move(msg));
 }

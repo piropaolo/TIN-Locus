@@ -53,10 +53,18 @@ namespace message {
                 return std::string("Error");
             case Close:
                 return std::string("Close");
-            case AddSocket:
-                return std::string("AddSocket");
-            case EraseSocket:
-                return std::string("EraseSocket");
+            case AddClient:
+                return std::string("AddClient");
+            case EraseClient:
+                return std::string("EraseClient");
+            case AddEPollEvent:
+                return std::string("AddEPollEvent");
+            case EraseFileDescriptor:
+                return std::string("EraseFileDescriptor");
+            case PacketSend:
+                return std::string("PacketSend");
+            case PacketReceive:
+                return std::string("PacketReceive");
         }
     }
 }

@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
 
 
     std::cout << "--You can now write messages to the server--\n"
-                 "--EOF character (Ctrl + D) or empty first line terminates the input loop--" << std::endl;
+                 "--EOF character (Ctrl + D) or Empty first line terminates the input loop--" << std::endl;
 
     std::streamsize characters_read;
     std::cout << std::boolalpha;
@@ -217,7 +217,7 @@ int main(int argc, char **argv) {
             std::cin.get(); // extract and discard the delim chars
         }
     }
-    // EOF character (Ctrl + D) or empty first line terminates the input loop
+    // EOF character (Ctrl + D) or Empty first line terminates the input loop
 
 
     std::cout << "--Closing client--" << std::endl;

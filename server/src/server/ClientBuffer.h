@@ -1,36 +1,40 @@
 #ifndef LOCUS_CLIENTBUFFER_H
 #define LOCUS_CLIENTBUFFER_H
 
-//#include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include "EPollEvent.h"
 #include "Buffer.h"
+#include "message/Message.h"
+#include "message/BlockingQueue.h"
 
 class ClientBuffer : public EPollEvent {
 public:
-    ClientBuffer(const int &port, const sockaddr &client_addr);
+    explicit ClientBuffer(const int &port);
     ClientBuffer(const ClientBuffer&) = delete;
 
     ~ClientBuffer() override = default;
 
     const bool isClose() const;
 
-    const sockaddr &getClient_addr() const;
-
     Buffer &getBufferIn();
 
     Buffer &getBufferOut();
+
+    void setClientBlockingQueue(message::BlockingQueue<message::Message> *clientBlockingQueue);
 
     void recvData() override;
 
     void sendData() override;
 
 private:
-    bool close = false;
-    struct sockaddr client_addr;
+    mutable bool close = false;
     Buffer bufferIn;
     Buffer bufferOut;
+    message::BlockingQueue<message::Message> *clientBlockingQueue = nullptr;
+
+    std::vector<std::byte> recvData(const size_t &n) const;
+    std::vector<std::byte>  sendData(std::vector<std::byte> buffer) const;
 };
 
 

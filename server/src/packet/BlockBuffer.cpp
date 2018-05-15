@@ -21,7 +21,7 @@ namespace packet {
 
     std::vector<std::byte> BlockBuffer::pop() {
         if(blockBuffer.empty()) {
-            throw std::runtime_error("BlockBuffer is empty");
+            throw std::runtime_error("BlockBuffer is Empty");
 
         }
         auto result = blockBuffer.front();

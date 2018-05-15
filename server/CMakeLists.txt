@@ -13,13 +13,13 @@ add_subdirectory(src/log)
 add_subdirectory(src/packet)
 add_subdirectory(src/message)
 add_subdirectory(src/messenger)
-add_subdirectory(src/receiver)
+add_subdirectory(src/server)
 
 add_subdirectory(lib)
 
 add_executable(${PROJECT_NAME} src/main.cpp)
 
 target_link_libraries(${PROJECT_NAME}
-        Locus_receiver Locus_log Locus_packet Locus_message Locus_messenger
+        Locus_server Locus_log Locus_packet Locus_message Locus_messenger
         ${CMAKE_THREAD_LIBS_INIT}
         )

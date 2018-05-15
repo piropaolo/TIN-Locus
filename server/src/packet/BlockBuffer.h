@@ -49,7 +49,7 @@ namespace packet {
     template<typename T>
     T &BlockBuffer::pop(T &object) {
         if(blockBuffer.empty()) {
-            throw std::runtime_error("BlockBuffer is empty");
+            throw std::runtime_error("BlockBuffer is Empty");
 
         }
         if (sizeof(T) != frontSize()) {

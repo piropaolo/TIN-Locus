@@ -7,8 +7,8 @@
 #include "ErrorType.h"
 #include "BlockingQueue.h"
 #include "packet/Packet.h"
-#include "receiver/Buffer.h"
-#include "receiver/EPollEvent.h"
+#include "server/Buffer.h"
+#include "server/EPollEvent.h"
 
 namespace message {
     struct Message {
@@ -16,12 +16,18 @@ namespace message {
             Empty,
             Error,
             Close,
-            AddSocket,
-            EraseSocket
+            AddClient,
+            EraseClient,
+            AddEPollEvent,
+            EraseFileDescriptor,
+            PacketSend,
+            PacketReceive
         };
 
         Message() = default;
         explicit Message(const Type &type);
+
+        virtual ~Message() = default;
 
         Message(const Message&) = delete;
         Message(Message&&) = default;
@@ -41,7 +47,7 @@ namespace message {
         Type type = Empty;
 
         std::unique_ptr<ErrorType> errorType;
-        std::unique_ptr<int> socketID;
+        std::unique_ptr<int> fileDescriptor;
         std::unique_ptr<sockaddr> sock_addr;
         std::unique_ptr<EPollEvent *> ePollEvent;
         std::unique_ptr<BlockingQueue<Message> *> blockingQueue;

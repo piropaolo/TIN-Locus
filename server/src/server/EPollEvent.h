@@ -6,6 +6,7 @@ class EPollEvent {
 public:
     EPollEvent() = default;
     EPollEvent(const EPollEvent &) = delete;
+    EPollEvent(EPollEvent &&ePollEvent) noexcept;
 
     virtual ~EPollEvent();
 
