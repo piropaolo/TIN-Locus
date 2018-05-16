@@ -17,6 +17,9 @@ public:
 
     void sendData(const std::vector<std::byte> &bytes) override;
     std::vector<std::byte> recvData() override;
+
+private:
+    void upgrade();
 };
 
 

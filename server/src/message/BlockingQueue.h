@@ -8,10 +8,7 @@
 #include <chrono>
 #include <memory>
 
-#include <unistd.h> // pipe
-#include <fcntl.h>  // O_NONBLOCK flag for pipe
-#include <cerrno>
-#include <system_error>
+#include "buffer/PipeBuffer.h"
 
 namespace message {
 
@@ -36,6 +33,7 @@ namespace message {
         bool empty() const;
 
         int getReadFd() const;
+
         int getWriteFd() const;
 
     private:
@@ -45,17 +43,7 @@ namespace message {
         mutable std::condition_variable emptyCondition;
         mutable std::condition_variable fullCondition;
         const size_t maxQueueSize = 0;
-
-        /*mutable*/ union {
-            struct {
-                int pipeReadFd;
-                int pipeWriteFd;
-            };
-            int pipeFds[2];
-        };
-
-        void pushByteToPipe() const;
-        void popByteFromPipe() const;
+        PipeBuffer pipeBuffer;
 
         T popWithoutBlocking();
     };
@@ -65,13 +53,6 @@ namespace message {
     BlockingQueue<T>::BlockingQueue(const size_t &maxQueueSize)
             : maxQueueSize(maxQueueSize) {
         //check if set working
-
-        // open pipe, NOTE: pipe2 is Linux-specific
-        if (pipe2(pipeFds, O_NONBLOCK | O_CLOEXEC) != 0) {
-            throw std::system_error(errno, std::generic_category());
-        }
-
-        // close pipe fds in destructor? O_CLOEXEC flag?
     }
 
     template<class T>
@@ -80,11 +61,6 @@ namespace message {
         std::lock_guard<std::mutex> guard(rth.accessMutex);
         queue = std::move(rth.queue);
         priority = std::move(rth.priority);
-
-        // open pipe, NOTE: pipe2 is Linux-specific
-        if (pipe2(pipeFds, O_NONBLOCK | O_CLOEXEC) != 0) {
-            throw std::system_error(errno, std::generic_category());
-        }
     }
 
     template<class T>
@@ -93,7 +69,7 @@ namespace message {
             std::unique_lock<std::mutex> uniqueGuard(accessMutex);
             fullCondition.wait(uniqueGuard, [&] { return queue.size() < maxQueueSize; });
             queue.push(std::forward<T>(elem));
-            pushByteToPipe();
+            pipeBuffer.pushByteToPipe();
         }
         emptyCondition.notify_one();
     }
@@ -104,7 +80,9 @@ namespace message {
         {
             std::lock_guard<std::mutex> guard(accessMutex);
             result = priority.insert(std::make_unique<T>(std::forward<T>(elem))).second;
-            pushByteToPipe();
+            if(result) {
+                pipeBuffer.pushByteToPipe();
+            }
         }
         emptyCondition.notify_one();
         return result;
@@ -120,7 +98,7 @@ namespace message {
             ret = std::move(queue.front());
             queue.pop();
         }
-        popByteFromPipe();
+        pipeBuffer.popByteFromPipe();
         return std::move(ret);
     }
 
@@ -167,33 +145,13 @@ namespace message {
     }
 
     template<class T>
-    void BlockingQueue<T>::pushByteToPipe() const {
-        // std::byte ?
-        if (write(pipeWriteFd, "1", sizeof "1"[0]) == -1) {
-            throw std::system_error(errno, std::generic_category());
-        }
-
-        // something more?
-    }
-
-    template<class T>
-    void BlockingQueue<T>::popByteFromPipe() const {
-        unsigned char byte;
-        if (read(pipeReadFd, (void*)&byte, sizeof byte) == -1) {
-            throw std::system_error(errno, std::generic_category());
-        }
-
-        // something more?
-    }
-
-    template<class T>
     int BlockingQueue<T>::getReadFd() const {
-        return pipeReadFd;
+        return pipeBuffer.getReadFd();
     }
 
     template<class T>
     int BlockingQueue<T>::getWriteFd() const {
-        return pipeWriteFd;
+        return pipeBuffer.pipeWriteFd;
     }
 }
 
