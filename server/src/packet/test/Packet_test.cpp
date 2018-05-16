@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "../Packet.h"
 
-#include "../Converter.h"
+#include "buffer/Converter.h"
 
 using namespace packet;
 

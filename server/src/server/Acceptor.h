@@ -4,7 +4,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "EPollEvent.h"
+#include "epoll/EPollEvent.h"
 #include "message/Message.h"
 #include "message/BlockingQueue.h"
 
@@ -15,9 +15,9 @@
 
         ~Acceptor() override = default;
 
-        void recvData() override;
+        void recv() override;
 
-        void sendData() override {}
+        void send() override {}
 
     private:
         struct sockaddr_in server_addr;

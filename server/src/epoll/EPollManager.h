@@ -21,6 +21,8 @@ public:
 
     void addEPollEvent(EPollEvent *newEvent);
 
+    void changeEPollEvent(EPollEvent *newEvent);
+
     void eraseFileDescriptor(const int &socketID);
 
     uint32_t getFlags() const;

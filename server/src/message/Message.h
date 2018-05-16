@@ -7,8 +7,8 @@
 #include "ErrorType.h"
 #include "BlockingQueue.h"
 #include "packet/Packet.h"
-#include "server/Buffer.h"
-#include "server/EPollEvent.h"
+#include "buffer/BlockingBuffer.h"
+#include "epoll/EPollEvent.h"
 
 namespace message {
     struct Message {
@@ -19,9 +19,12 @@ namespace message {
             AddClient,
             EraseClient,
             AddEPollEvent,
+            ChangeEPollEvent,
             EraseFileDescriptor,
             PacketSend,
-            PacketReceive
+            PacketReceive,
+            UpgradeClientWithEncryption,
+            UpgradeClientWithProtocol
         };
 
         Message() = default;

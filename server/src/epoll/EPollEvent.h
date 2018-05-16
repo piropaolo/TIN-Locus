@@ -10,13 +10,13 @@ public:
 
     virtual ~EPollEvent();
 
-    int getFileDescriptor() const;
+    virtual int getFileDescriptor() const;
 
     void setFileDescriptor(const int &fileDescriptor);
 
-    virtual void recvData() = 0;
+    virtual void recv() = 0;
 
-    virtual void sendData() = 0;
+    virtual void send() = 0;
 
 private:
     int fileDescriptor = 0;

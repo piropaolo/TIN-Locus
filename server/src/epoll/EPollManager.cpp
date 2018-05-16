@@ -39,6 +39,18 @@ void EPollManager::addEPollEvent(EPollEvent *newEvent) {
             name + ": The EPollEvent is added with fd: " + std::to_string(newEvent->getFileDescriptor()));
 }
 
+void EPollManager::changeEPollEvent(EPollEvent *newEvent) {
+    event.data.ptr = newEvent;
+    event.events = flags; //EPOLLIN EPOLLOUT
+
+    if (epoll_ctl(ePollFD, EPOLL_CTL_MOD, newEvent->getFileDescriptor(), &event) < 0) {
+        throw std::runtime_error(name + ": Error while changing in epoll_ctl" + std::string(std::strerror(errno)));
+    }
+
+    Logger::getInstance().logMessage(
+            name + ": The EPollEvent is change with fd: " + std::to_string(newEvent->getFileDescriptor()));
+}
+
 void EPollManager::eraseFileDescriptor(const int &socketID) {
     epoll_ctl(ePollFD, EPOLL_CTL_DEL, socketID, nullptr);
 
@@ -56,13 +68,13 @@ void EPollManager::readEPoll() {
 
     for (int i = 0; i < nfds; ++i) {
         if (events[i].events & EPOLLIN) {
-            Logger::getInstance().logDebug(name + ": Run recvData for " + std::to_string(
+            Logger::getInstance().logDebug(name + ": Run recv for " + std::to_string(
                     static_cast<EPollEvent *>(events[i].data.ptr)->getFileDescriptor()));
-            static_cast<EPollEvent *>(events[i].data.ptr)->recvData();
+            static_cast<EPollEvent *>(events[i].data.ptr)->recv();
         } else if (events[i].events & EPOLLOUT) {
-            Logger::getInstance().logDebug(name + ": Run sendData for " + std::to_string(
+            Logger::getInstance().logDebug(name + ": Run send for " + std::to_string(
                     static_cast<EPollEvent *>(events[i].data.ptr)->getFileDescriptor()));
-            static_cast<EPollEvent *>(events[i].data.ptr)->sendData();
+            static_cast<EPollEvent *>(events[i].data.ptr)->send();
         } else {
             Logger::getInstance().logError(
                     name + ": Error on file descriptor " + std::to_string(events[i].events)

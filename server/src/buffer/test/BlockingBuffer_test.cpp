@@ -1,15 +1,14 @@
 #include "gtest/gtest.h"
-#include "../Buffer.h"
+#include "buffer/Buffer.h"
 
-using namespace receiver;
 
 TEST(Buffer_Constructor, Initialize) {
-    Buffer buffer(10);
+    Buffer buffer;
     EXPECT_EQ(1, 1);
 }
 
 TEST(Buffer_Pop, popPart) {
-    Buffer buffer(10);
+    Buffer buffer;
     const auto byte = std::byte(0);
     buffer.push_back(std::vector<std::byte>(2, byte));
     EXPECT_EQ(buffer.size(), 2);
@@ -22,7 +21,7 @@ TEST(Buffer_Pop, popPart) {
 }
 
 TEST(Buffer_Pop, popExactly) {
-    Buffer buffer(10);
+    Buffer buffer;
     const auto byte = std::byte(0);
     buffer.push_back(std::vector<std::byte>(2, byte));
 
@@ -31,7 +30,7 @@ TEST(Buffer_Pop, popExactly) {
 }
 
 TEST(Buffer_Pop, popCrossPart) {
-    Buffer buffer(10);
+    Buffer buffer;
     const auto byte = std::byte(0);
     buffer.push_back(std::vector<std::byte>(2, byte));
     buffer.push_back(std::vector<std::byte>(2, byte));
@@ -44,7 +43,7 @@ TEST(Buffer_Pop, popCrossPart) {
 }
 
 TEST(Buffer_Pop, popCrossExactly) {
-    Buffer buffer(10);
+    Buffer buffer;
     const auto byte = std::byte(0);
     buffer.push_back(std::vector<std::byte>(2, byte));
     buffer.push_back(std::vector<std::byte>(2, byte));

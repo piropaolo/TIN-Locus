@@ -1,7 +1,7 @@
 #ifndef LOCUS_BASICTHREAD_H
 #define LOCUS_BASICTHREAD_H
 
-#include "EPollManager.h"
+#include "epoll/EPollManager.h"
 #include "message/Message.h"
 #include "message/BlockingQueue.h"
 

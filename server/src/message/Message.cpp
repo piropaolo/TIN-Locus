@@ -59,12 +59,18 @@ namespace message {
                 return std::string("EraseClient");
             case AddEPollEvent:
                 return std::string("AddEPollEvent");
+            case ChangeEPollEvent:
+                return std::string("ChangeEPollEvent");
             case EraseFileDescriptor:
                 return std::string("EraseFileDescriptor");
             case PacketSend:
                 return std::string("PacketSend");
             case PacketReceive:
                 return std::string("PacketReceive");
+            case UpgradeClientWithEncryption:
+                return std::string("UpgradeClientWithEncryption");
+            case UpgradeClientWithProtocol:
+                return std::string("UpgradeClientWithProtocol");
         }
     }
 }

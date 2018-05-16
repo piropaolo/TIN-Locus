@@ -2,33 +2,22 @@
 #define LOCUS_PACKET_H
 
 #include "PacketType.h"
-#include "BlockBuffer.h"
+#include "buffer/Buffer.h"
 
 namespace packet {
     class Packet {
     public:
+        Packet() = default;
         explicit Packet(PacketType::header type);
 
         PacketType::header getType() const;
-        const size_t getTypeSize() const;
-        const std::byte *getTypeData() const;
 
-        BlockBuffer &getBuffer();
-        const BlockBuffer &getBuffer() const;
-
-        bool operator==(const Packet &rhs) const;
-        bool operator!=(const Packet &rhs) const;
-        
-        bool operator<(const Packet &rhs) const;
-        bool operator>(const Packet &rhs) const;
-        bool operator<=(const Packet &rhs) const;
-        bool operator>=(const Packet &rhs) const;
-
-        int x;
+        Buffer &getBuffer();
+        const Buffer &getBuffer() const;
 
     private:
         PacketType::header type = PacketType::UNDEFINED;
-        BlockBuffer buffer;
+        Buffer buffer;
     };
 }
 

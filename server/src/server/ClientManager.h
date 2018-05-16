@@ -1,17 +1,14 @@
 #ifndef LOCUS_CLIENTMANAGER_H
 #define LOCUS_CLIENTMANAGER_H
 
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <unordered_map>
-#include "EPollEvent.h"
+#include "epoll/EPollEvent.h"
 #include "message/Message.h"
 #include "message/BlockingQueue.h"
-#include "Server.h"
-#include "Receiver.h"
-#include "Sender.h"
-#include "ClientBuffer.h"
-#include "Client.h"
+#include "server/Server.h"
+#include "server/Receiver.h"
+#include "server/Sender.h"
+#include "client/Client.h"
 
 class ClientManager : public EPollEvent {
 public:
@@ -21,9 +18,9 @@ public:
 
     message::BlockingQueue<message::Message> &getBlockingQueue();
 
-    void recvData() override;
+    void recv() override;
 
-    void sendData() override {}
+    void send() override {}
 
 private:
     message::BlockingQueue<message::Message> blockingQueue;
@@ -31,7 +28,6 @@ private:
     Receiver &receiver;
     Sender &sender;
     std::unordered_map<int, std::unique_ptr<Client>> clientsMap;
-//    std::unordered_map<int, Client> clientsMap;
 
     void addClient(const int &fileDescriptor, const sockaddr &sock_addr);
 
@@ -39,6 +35,9 @@ private:
 
     void closeAllClients();
 
+    void upgradeClientWithEncryption(int &fileDescriptor);
+
+    void upgradeClientWithProtocol(int &fileDescriptor);
 };
 
 

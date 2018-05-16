@@ -3,8 +3,8 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include "EPollEvent.h"
-#include "Buffer.h"
+#include "epoll/EPollEvent.h"
+#include "buffer/BlockingBuffer.h"
 #include "message/Message.h"
 #include "message/BlockingQueue.h"
 
@@ -17,24 +17,24 @@ public:
 
     const bool isClose() const;
 
-    Buffer &getBufferIn();
+    BlockingBuffer &getBufferIn();
 
-    Buffer &getBufferOut();
+    BlockingBuffer &getBufferOut();
 
     void setClientBlockingQueue(message::BlockingQueue<message::Message> *clientBlockingQueue);
 
-    void recvData() override;
+    void recv() override;
 
-    void sendData() override;
+    void send() override;
 
 private:
     mutable bool close = false;
-    Buffer bufferIn;
-    Buffer bufferOut;
+    BlockingBuffer bufferIn;
+    BlockingBuffer bufferOut;
     message::BlockingQueue<message::Message> *clientBlockingQueue = nullptr;
 
-    std::vector<std::byte> recvData(const size_t &n) const;
-    std::vector<std::byte>  sendData(std::vector<std::byte> buffer) const;
+    std::vector<std::byte> recv(const size_t &n) const;
+    std::vector<std::byte>  send(std::vector<std::byte> buffer) const;
 };
 
 

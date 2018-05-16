@@ -64,7 +64,7 @@ bool Acceptor::setNonBlock(int &sfd) {
     return true;
 }
 
-void Acceptor::recvData() {
+void Acceptor::recv() {
     struct sockaddr in_addr{};
     socklen_t in_len = sizeof in_addr;
     int in_fd = accept(getFileDescriptor(), &in_addr, &in_len);

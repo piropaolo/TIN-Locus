@@ -19,10 +19,10 @@ void EPollEvent::setFileDescriptor(const int &fileDescriptor) {
 }
 
 EPollEvent::~EPollEvent() {
-    if (getFileDescriptor() > 0) {
-        close(getFileDescriptor());
+    if (fileDescriptor > 2) {
+        close(fileDescriptor);
         log::Logger::getInstance().logMessage(
-                "EPollEvent: Close file descriptor: " + std::to_string(getFileDescriptor()));
+                "EPollEvent: Close file descriptor: " + std::to_string(fileDescriptor));
     }
 }
 
