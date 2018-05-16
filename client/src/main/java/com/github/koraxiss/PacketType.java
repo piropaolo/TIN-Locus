@@ -23,7 +23,8 @@ public enum PacketType {
     _LOCATION,
     _ACK_OK,
     _ACK_ERR,
-    _ALIVE;
+    _ALIVE,
+    _OTHER;
 
     public static Map<Integer, PacketType> packetTypeMap = new HashMap<>();
     public static Map<PacketType, Integer> reversedMap = new HashMap<>();
