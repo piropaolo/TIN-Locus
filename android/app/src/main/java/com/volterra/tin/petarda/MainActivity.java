@@ -32,7 +32,7 @@ public class MainActivity extends AppCompatActivity {
         mRecyclerView.setLayoutManager(mLayoutManager);
 
         // specify an adapter
-        mAdapter = new UserAdapter(this, userNames);
+        mAdapter = new UserAdapter(userNames);
         mRecyclerView.setAdapter(mAdapter);
     }
 }
