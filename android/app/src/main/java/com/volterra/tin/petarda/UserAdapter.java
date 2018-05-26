@@ -11,18 +11,17 @@ import java.util.List;
 
 public class UserAdapter extends RecyclerView.Adapter<UserAdapter.ViewHolder> {
     private List<String> mData;
-    private LayoutInflater mInflater;
 
     // Provide a suitable constructor
-    UserAdapter(Context context, List<String> data) {
-        this.mInflater = LayoutInflater.from(context);
+    UserAdapter(List<String> data) {
         this.mData = data;
     }
 
     // Create new views (invoked by the layout manager)
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = mInflater.inflate(R.layout.recycler_view_row, parent, false);
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.recycler_view_row, parent, false);
         return new ViewHolder(view);
     }
 
