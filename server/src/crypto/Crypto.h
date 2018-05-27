@@ -7,22 +7,25 @@
 #include <crypto++/aes.h>
 #include <crypto++/modes.h>
 
+#include <vector>
+
 using namespace CryptoPP;
 
 namespace crypto {
+    typedef std::vector<unsigned char> byte_vector;
+
     class RSACrypto {
         public:
-            RSACrypto(bool loadKeysFromFiles = true, bool saveKeysToFiles = true,
-                const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
-                const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME);
-            RSACrypto(const std::string &encryptKey, const std::string &decryptKey);
+            RSACrypto();
+            RSACrypto(const byte_vector &encryptKey, const byte_vector &decryptKey);
 
-            std::string encrypt(const std::string &text);
-            std::string decrypt(const std::string &cipher);
+            byte_vector encrypt(const byte_vector &text);
+            byte_vector decrypt(const byte_vector &cipher);
 
-            void setEncryptKey(const std::string &encryptKey);
-            void setDecryptKey(const std::string &decryptKey);
-            std::string getPublicKey() const;
+            void setEncryptionKey(const byte_vector &encryptKey);
+            void setDecryptionKey(const byte_vector &decryptKey);
+            byte_vector getEncryptionKey() const;
+            byte_vector getDecryptionKey() const;
 
         private:
             RSA::PrivateKey privateKey_;    // key used for decryption
@@ -35,28 +38,57 @@ namespace crypto {
             std::size_t fixedCipherTextLength_;
             AutoSeededRandomPool randomGenerator_;
 
+            mutable bool publicKeyInitialized_ = false;
+            mutable bool privateKeyInitialized_ = false;
+
+        private:
+            void initCryptors();
+            inline void testIfPublicKeyInitialized() const;
+            inline void testIfPrivateKeyInitialized() const;
+    };
+
+    class RSAServerCrypto {
+        public:
+            RSAServerCrypto(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
+                const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME);
+
+            byte_vector encrypt(const byte_vector &text);
+            byte_vector decrypt(const byte_vector &cipher);
+
+            byte_vector getPublicKey() const;
+            byte_vector getPrivateKey() const;
+
+            //TODO (not implemented as of yet)
+            void saveKeysToFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
+                const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME) const;
+            static void generateKeyFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
+                const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME);
+
+
+        private:
+            crypto::RSACrypto rsaCrypto_;
             //std::string encryptKeyFilename;
             //std::string decryptKeyFilename;
             static const char* DEFAULT_PUBLIC_KEY_FILENAME;
             static const char* DEFAULT_PRIVATE_KEY_FILENAME;
 
         private:
-            void saveKeysToFileSystem(const std::string &encryptKeyFilename, const std::string &decryptKeyFilename);
-            bool loadKeysFromFileSystem(const std::string &encryptKeyFilename, const std::string &decryptKeyFilename);
+            /*void saveKeysToFileSystem(const std::string &encryptKeyFilename, const std::string &decryptKeyFilename, const byte_vector &publicKeyData, const byte_vector &privateKeyData);
+            bool loadKeysFromFileSystem(const std::string &encryptKeyFilename, const std::string &decryptKeyFilename, byte_vector &publicKeyDataTarget, byte_vector &privateKeyDataTarget);*/
 
-            void initCryptors();
+            static byte_vector loadKeyFromFile(const std::string &keyFilename);
     };
 
     class AESCrypto {
         public:
             AESCrypto();
-            AESCrypto(const std::string &symmetricKey);
+            AESCrypto(const byte_vector &symmetricKey);
 
-            std::string encrypt(const std::string &text);
-            std::string decrypt(const std::string &cipher);
+            byte_vector encrypt(const byte_vector &text);
+            byte_vector decrypt(const byte_vector &cipher);
 
-            void setSymmetricKey(const std::string &symmetricKey);
-            std::string getSymmetricKey() const;
+            void setSymmetricKey(const byte_vector &symmetricKey);
+            byte_vector getSymmetricKey() const;
 
         private:
             SecByteBlock key_;
