@@ -1,13 +1,14 @@
 #ifndef CRYPTO_H
 #define CRYPTO_H
 
-#include <crypto++/rsa.h>
-#include <crypto++/osrng.h>
+#include <cryptopp/rsa.h>
+#include <cryptopp/osrng.h>
 
-#include <crypto++/aes.h>
-#include <crypto++/modes.h>
+#include <cryptopp/aes.h>
+#include <cryptopp/modes.h>
 
 #include <vector>
+#include <string>
 
 using namespace CryptoPP;
 

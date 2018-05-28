@@ -1,6 +1,6 @@
 #include "Crypto.h"
 
-#include <crypto++/files.h>
+#include <cryptopp/files.h>
 
 #include <stdexcept>
 #include <sstream>
