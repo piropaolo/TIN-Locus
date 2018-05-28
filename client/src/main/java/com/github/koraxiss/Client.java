@@ -45,7 +45,6 @@ public class Client {
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet6));
                             CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
                             break;
-                            break;
                         case _CLOSE:
                             stop();
                             break;
