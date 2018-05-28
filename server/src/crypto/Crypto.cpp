@@ -217,8 +217,8 @@ namespace crypto {
         }
     }*/
 
-    const char* RSAServerCrypto::DEFAULT_PUBLIC_KEY_FILENAME = "rsa-public.key";
-    const char* RSAServerCrypto::DEFAULT_PRIVATE_KEY_FILENAME = "rsa-private.key";
+    const char* RSAServerCrypto::DEFAULT_PUBLIC_KEY_FILENAME = "rsa1024-public.key";
+    const char* RSAServerCrypto::DEFAULT_PRIVATE_KEY_FILENAME = "rsa1024-private.key";
 
     /*struct SymmetricKeyAndIV {
         std::string key;
