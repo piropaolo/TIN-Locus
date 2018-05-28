@@ -9,4 +9,4 @@ add_executable(${PROJECT_NAME}
         )
 
 target_link_libraries(${PROJECT_NAME} gtest gtest_main)
-target_link_libraries(${PROJECT_NAME} Locus_packet)
+target_link_libraries(${PROJECT_NAME} Locus_packet Locus_buffer)

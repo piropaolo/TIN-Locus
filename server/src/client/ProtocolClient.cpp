@@ -40,11 +40,11 @@ void ProtocolClient::recv() {
     }
 }
 
-void ProtocolClient::sendData(const std::vector<std::byte> &bytes) {
+void ProtocolClient::sendData(const std::vector<unsigned char> &bytes) {
     client->sendData(bytes);
 }
 
-std::vector<std::byte> ProtocolClient::recvData() {
+std::vector<unsigned char> ProtocolClient::recvData() {
     return client->recvData();
 }
 

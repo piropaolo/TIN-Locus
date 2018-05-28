@@ -10,7 +10,7 @@
 namespace packet {
 
 //    using byte = unsigned char;
-    using byte = std::byte;
+    using byte = unsigned char;
 
     template<typename T>
     std::vector<byte> to_bytes(const T &object) {

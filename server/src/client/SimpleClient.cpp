@@ -54,14 +54,14 @@ void SimpleClient::recv() {
     }
 }
 
-void SimpleClient::sendData(const std::vector<std::byte> &bytes) {
-    clientBuffer->getBufferOut().push_back(const_cast<std::vector<std::byte> &>(bytes));
+void SimpleClient::sendData(const std::vector<unsigned char> &bytes) {
+    clientBuffer->getBufferOut().push_back(const_cast<std::vector<unsigned char> &>(bytes));
     clientBuffer->getBufferOut().setStage(BlockingBuffer::Stage::Full);
     //notify sender
     clientBuffer->send();
 }
 
-std::vector<std::byte> SimpleClient::recvData() {
+std::vector<unsigned char> SimpleClient::recvData() {
     clientBuffer->getBufferOut().setStage(BlockingBuffer::Stage::Empty);
     return clientBuffer->getBufferOut().pop(clientBuffer->getBufferOut().size());
 }

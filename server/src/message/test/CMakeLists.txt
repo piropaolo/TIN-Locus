@@ -7,4 +7,4 @@ add_executable(${PROJECT_NAME}
         Message_test.cpp)
 
 target_link_libraries(${PROJECT_NAME} gtest gtest_main)
-target_link_libraries(${PROJECT_NAME} Locus_message)
+target_link_libraries(${PROJECT_NAME} Locus_message Locus_buffer)

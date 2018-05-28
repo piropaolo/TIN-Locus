@@ -15,8 +15,8 @@ public:
     void recv() override;
     void send() override {}
 
-    void sendData(const std::vector<std::byte> &bytes) override;
-    std::vector<std::byte> recvData() override;
+    void sendData(const std::vector<unsigned char> &bytes) override;
+    std::vector<unsigned char> recvData() override;
 
 private:
     void upgrade();

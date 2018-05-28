@@ -41,12 +41,12 @@ void EncryptClient::recv() {
     }
 }
 
-void EncryptClient::sendData(const std::vector<std::byte> &bytes) {
+void EncryptClient::sendData(const std::vector<unsigned char> &bytes) {
     //szyfruj
     client->sendData(bytes);
 }
 
-std::vector<std::byte> EncryptClient::recvData() {
+std::vector<unsigned char> EncryptClient::recvData() {
     //deszyfruj
     return client->recvData();
 }

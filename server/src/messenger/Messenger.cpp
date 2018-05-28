@@ -58,7 +58,7 @@ namespace messenger {
         return bytes * CHAR_BIT;
     }
     
-    const std::vector<std::byte> Messenger::readNBytes(const size_t &n) {
+    const std::vector<unsigned char> Messenger::readNBytes(const size_t &n) {
         std::vector<byte> bytes(n);
         recv(bytes.data(), bytesToBites(bytes.size()));
         return bytes;
