@@ -26,18 +26,83 @@ public class Client {
         writerThread.start();
         readerThread.start();
         Message message;
-//        try {
-//            sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._OPEN)));
-//        } catch (InterruptedException e) {
-//            e.printStackTrace();
-//        }
         while (running) {
             try {
-//                message = childMessages.poll();
                 message = childMessages.take();
                 if (message.getType() == Message.MessageType.PACKET) {
-                    System.out.println((String) message.getPacket().getArg1());
-                    sendInstructions.put(message);
+                    switch(message.getPacket().getType()) {
+                        case _OPEN:
+                        case _OPEN_PROT:
+                        case _ALIVE:
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
+                            break;
+                        case _OPEN_ENCR:
+//                            CipherModule.init();
+                            layerManager.setEncryptionOn(true);
+                            CipherModule.setState(CipherModule.State.SERVER_PUBLIC);
+                            Packet packet6 = new Packet(PacketType._PUBLIC_KEY);
+//                            packet.setArg1(client public key);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet6));
+                            CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
+                            break;
+                            break;
+                        case _CLOSE:
+                            stop();
+                            break;
+                        case _SYMMETRIC_KEY:
+//                            CipherModule.setSessionKey();
+//                            CipherModule.setState(CipherModule.State.SESSION);
+                            break;
+                        case _TEST_KEY:
+//                            do something with challenge;
+                            Packet packet = new Packet(PacketType._TEST_KEY);
+//                            packet.setArg1(challenge after doing soething with it);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet));
+                            break;
+                        case _SET_NAME:
+//                            get name from gui
+                            Packet packet1 = new Packet(PacketType._SET_NAME);
+//                            packet.setArg1(name that we got from gui);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet1));
+                            break;
+                        case _ADD_FOLLOWER:
+//                          get who we want to follow from gui
+                            Packet packet4 = new Packet(PacketType._ADD_FOLLOWER);
+//                            action initialized by giu so we have name from there
+//                            packet2.setArg1(name from gui);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet4));
+                            break;
+                        case _NEW_FOLLOWED:
+//                            tell gui to display information about new followed user
+                        case _REMOVE_FOLLOWED:
+                            Packet packet3 = new Packet(PacketType._REMOVE_FOLLOWED);
+//                            action initialized by giu so we have name from there
+//                            packet2.setArg1(name from gui);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet3));
+                            break;
+                        case _REMOVE_FOLLOWER:
+                            Packet packet2 = new Packet(PacketType._REMOVE_FOLLOWER);
+//                            action initialized by giu so we have name from there
+//                            packet2.setArg1(name from gui);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet2));
+                            break;
+                        case _LOCATION:
+//                            tell gui to update position of client of given id
+                            break;
+                        case _ACK_ERR:
+                            break;
+                        case _ACK_OK:
+                            break;
+                        case _MY_LOCATION:
+//                            gui gives us location
+                            Packet packet5 = new Packet(PacketType._REMOVE_FOLLOWED);
+//                            action initialized by giu so we have name from there
+//                            packet2.setArg1(latitude from gui);
+//                            packet2.setArg2(longitude from gui);
+//                            packet2.setArg3(delta time from gui);
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, packet5));
+                            break;
+                    }
                 } else
                     stop();
                 Thread.sleep(100);
