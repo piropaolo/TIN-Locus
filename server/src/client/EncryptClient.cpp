@@ -26,16 +26,6 @@ void EncryptClient::recv() {
             closeConnection();
             break;
 
-        case Message::PacketSend:
-            Logger::getInstance().logMessage(
-                    "EncryptClient " + std::to_string(getConnectionFD()) + ": Get PacketSend message");
-            break;
-
-        case Message::PacketReceive:
-            Logger::getInstance().logMessage(
-                    "EncryptClient " + std::to_string(getConnectionFD()) + ": Get PacketReceive message");
-            break;
-
         default:
             Logger::getInstance().logDebug("EncryptClient: Get unexpected message: " + msg.toString());
     }

@@ -47,9 +47,3 @@ void ProtocolClient::sendData(const std::vector<unsigned char> &bytes) {
 std::vector<unsigned char> ProtocolClient::recvData() {
     return client->recvData();
 }
-
-void ProtocolClient::upgrade() {
-    Message msg(Message::UpgradeClientWithProtocol);
-    msg.fileDescriptor = std::make_unique<int>(getConnectionFD());
-    getClientManagerBlockingQueue().push(std::move(msg));
-}

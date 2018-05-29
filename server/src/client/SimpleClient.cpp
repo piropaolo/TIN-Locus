@@ -16,8 +16,6 @@ SimpleClient::SimpleClient(const sockaddr &client_addr, std::unique_ptr<ClientBu
     this->clientBuffer->setClientBlockingQueue(&getBlockingQueue());
 
     Logger::getInstance().logMessage("SimpleClient " + std::to_string(getConnectionFD()) + ": Created");
-
-    upgrade();
 }
 
 SimpleClient::~SimpleClient() {
@@ -37,16 +35,6 @@ void SimpleClient::recv() {
             Logger::getInstance().logMessage(
                     "SimpleClient " + std::to_string(getConnectionFD()) + ": Get Close message");
             closeConnection();
-            break;
-
-        case Message::PacketSend:
-            Logger::getInstance().logMessage(
-                    "SimpleClient " + std::to_string(getConnectionFD()) + ": Get PacketSend message");
-            break;
-
-        case Message::PacketReceive:
-            Logger::getInstance().logMessage(
-                    "SimpleClient " + std::to_string(getConnectionFD()) + ": Get PacketReceive message");
             break;
 
         default:
@@ -86,10 +74,4 @@ void SimpleClient::closeConnection() {
 
 message::BlockingQueue<message::Message> &SimpleClient::getClientManagerBlockingQueue() {
     return *clientManagerBlockingQueue;
-}
-
-void SimpleClient::upgrade() {
-    Message msg(Message::UpgradeClientWithEncryption);
-    msg.fileDescriptor = std::make_unique<int>(getConnectionFD());
-    getClientManagerBlockingQueue().push(std::move(msg));
 }

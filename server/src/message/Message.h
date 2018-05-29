@@ -22,9 +22,7 @@ namespace message {
             ChangeEPollEvent,
             EraseFileDescriptor,
             PacketSend,
-            PacketReceive,
-            UpgradeClientWithEncryption,
-            UpgradeClientWithProtocol
+            PacketReceive
         };
 
         Message() = default;

@@ -39,8 +39,6 @@ private:
     std::unique_ptr<ClientBuffer> clientBuffer;
     message::BlockingQueue<message::Message> blockingQueue;
     message::BlockingQueue<message::Message> *clientManagerBlockingQueue;
-
-    void upgrade();
 };
 
 
