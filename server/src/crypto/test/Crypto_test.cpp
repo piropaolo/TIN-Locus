@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include "crypto/keysGenerator.h"
 #include "crypto/Crypto.h"
 #include <iostream>
 
@@ -12,7 +13,7 @@ inline std::string toString(const crypto::byte_vector &vector) {
 }
 
 TEST(Crypto_RSA, Test) {
-
+    crypto::keysGenerator(1024);
     crypto::RSAServerCrypto rsaServerCrypto;
     std::string res = "Ala ma kota";
     crypto::byte_vector vec = toByteVector(res);
