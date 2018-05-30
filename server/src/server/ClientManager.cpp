@@ -107,7 +107,7 @@ void ClientManager::addClient(const int &fileDescriptor, const sockaddr &sock_ad
 void ClientManager::eraseClient(const int &fileDescriptor) {
     auto it = clientsMap.find(fileDescriptor);
     if (it == clientsMap.end()) {
-        Logger::getInstance().logDebug("ClientManager: fileDescriptor not register");
+        Logger::getInstance().logDebug("ClientManager: fileDescriptor is not registered");
         return;
     }
 
