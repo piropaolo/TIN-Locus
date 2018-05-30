@@ -73,3 +73,42 @@ TEST(CryptoModule_RSA, ToLongData) {
     EXPECT_NE(vec, encryptVec);
     EXPECT_EQ(vec, decryptVec);
 }
+
+TEST(CryptoModule_use, None) {
+    CryptoModule cryptoModule;
+    cryptoModule.use(CryptoModule::Algorithm::None);
+    std::string res = "Ala ma kota";
+    crypto::byte_vector vec = toByteVector(res);
+
+    auto encryptVec = cryptoModule.encrypt(vec);
+    auto decryptVec = cryptoModule.decrypt(encryptVec);
+
+    EXPECT_EQ(vec, encryptVec);
+    EXPECT_EQ(vec, decryptVec);
+}
+
+TEST(CryptoModule_use, RSA) {
+    CryptoModule cryptoModule;
+    cryptoModule.use(CryptoModule::Algorithm::RSA);
+    std::string res = "Ala ma kota";
+    crypto::byte_vector vec = toByteVector(res);
+
+    auto encryptVec = cryptoModule.encrypt(vec);
+    auto decryptVec = cryptoModule.decrypt(encryptVec);
+
+    EXPECT_NE(vec, encryptVec);
+    EXPECT_EQ(vec, decryptVec);
+}
+
+TEST(CryptoModule_use, AES) {
+    CryptoModule cryptoModule;
+    cryptoModule.use(CryptoModule::Algorithm::AES);
+    std::string res = "Ala ma kota";
+    crypto::byte_vector vec = toByteVector(res);
+
+    auto encryptVec = cryptoModule.encrypt(vec);
+    auto decryptVec = cryptoModule.decrypt(encryptVec);
+
+    EXPECT_NE(vec, encryptVec);
+    EXPECT_EQ(vec, decryptVec);
+}

@@ -69,4 +69,30 @@ namespace crypto {
     byte_vector CryptoModule::decryptAES(const byte_vector &cipher) {
         return aesCrypto.decrypt(cipher);
     }
+
+    void CryptoModule::use(const Algorithm &algo) {
+        algorithm = algo;
+    }
+
+    byte_vector CryptoModule::encrypt(const byte_vector &text) {
+        switch (algorithm) {
+            case Algorithm::None:
+                return text;
+            case Algorithm::RSA:
+                return encryptRSA(text);
+            case Algorithm::AES:
+                return encryptAES(text);
+        }
+    }
+
+    byte_vector CryptoModule::decrypt(const byte_vector &cipher) {
+        switch (algorithm) {
+            case Algorithm::None:
+                return cipher;
+            case Algorithm::RSA:
+                return decryptRSA(cipher);
+            case Algorithm::AES:
+                return decryptAES(cipher);
+        }
+    }
 }
