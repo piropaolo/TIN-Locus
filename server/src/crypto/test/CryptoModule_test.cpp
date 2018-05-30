@@ -1,0 +1,75 @@
+#include "gtest/gtest.h"
+#include "crypto/CryptoModule.h"
+#include "crypto/keysGenerator.h"
+
+#define PRINT2
+
+inline crypto::byte_vector toByteVector(const std::string &string) {
+    return crypto::byte_vector(string.begin(), string.end());
+}
+inline std::string toString(const crypto::byte_vector &vector) {
+    return std::string(vector.begin(), vector.end());
+}
+
+using namespace crypto;
+
+TEST(CryptoModule_RSA, SimpleTest) {
+    keysGenerator(512);
+    CryptoModule cryptoModule;
+    std::string res = "Ala ma kota";
+    crypto::byte_vector vec = toByteVector(res);
+
+    auto encryptVec = cryptoModule.encryptRSA(vec);
+    auto decryptVec = cryptoModule.decryptRSA(encryptVec);
+
+#ifdef PRINT
+    auto encryptRes = toString(encryptVec);
+    auto decryptRes = toString(decryptVec);
+
+    //NOTE: for RSA 512 (OAEP SHA) max text length is 22 (bytes)
+    std::cout << "RSA Before encryption: " << res << '\n';
+    std::cout << "RSA Text length: " << res.size() << '\n';
+
+    std::cout << "RSA Encrypted: " << encryptRes << '\n';
+    std::cout << "RSA Encrypted length: " << encryptRes.size() << '\n';
+
+    std::cout << "RSA Decrypted: " << decryptRes << '\n';
+
+    EXPECT_NE(res, encryptRes);
+    EXPECT_EQ(res, decryptRes);
+#endif
+
+    EXPECT_NE(vec, encryptVec);
+    EXPECT_EQ(vec, decryptVec);
+}
+
+
+TEST(CryptoModule_RSA, ToLongData) {
+    crypto::keysGenerator(512);
+    CryptoModule cryptoModule;
+    std::string res = "Ala ma kota .......2.........3.........4....";
+    crypto::byte_vector vec = toByteVector(res);
+
+    auto encryptVec = cryptoModule.encryptRSA(vec);
+    auto decryptVec = cryptoModule.decryptRSA(encryptVec);
+
+#ifdef PRINT
+    auto encryptRes = toString(encryptVec);
+    auto decryptRes = toString(decryptVec);
+
+    //NOTE: for RSA 512 (OAEP SHA) max text length is 22 (bytes)
+    std::cout << "RSA Before encryption: " << res << '\n';
+    std::cout << "RSA Text length: " << res.size() << '\n';
+
+    std::cout << "RSA Encrypted: " << encryptRes << '\n';
+    std::cout << "RSA Encrypted length: " << encryptRes.size() << '\n';
+
+    std::cout << "RSA Decrypted: " << decryptRes << '\n';
+
+    EXPECT_NE(res, encryptRes);
+    EXPECT_EQ(res, decryptRes);
+#endif
+
+    EXPECT_NE(vec, encryptVec);
+    EXPECT_EQ(vec, decryptVec);
+}

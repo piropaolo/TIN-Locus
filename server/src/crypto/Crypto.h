@@ -28,15 +28,18 @@ namespace crypto {
             byte_vector getEncryptionKey() const;
             byte_vector getDecryptionKey() const;
 
-        private:
+            size_t getMaxPlainTextLength_() const;
+            size_t getFixedCipherTextLength_() const;
+
+    private:
             RSA::PrivateKey privateKey_;    // key used for decryption
             RSA::PublicKey publicKey_;      // key used for encryption
 
             RSAES_OAEP_SHA_Encryptor encryptor_;
             RSAES_OAEP_SHA_Decryptor decryptor_;
 
-            std::size_t maxPlainTextLength_;
-            std::size_t fixedCipherTextLength_;
+            std::size_t maxPlainTextLength_ = 0;
+            std::size_t fixedCipherTextLength_ = 0;
             AutoSeededRandomPool randomGenerator_;
 
             mutable bool publicKeyInitialized_ = false;
@@ -50,7 +53,7 @@ namespace crypto {
 
     class RSAServerCrypto {
         public:
-            RSAServerCrypto(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
+            RSAServerCrypto(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME,
                 const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME);
 
             byte_vector encrypt(const byte_vector &text);
@@ -59,10 +62,13 @@ namespace crypto {
             byte_vector getPublicKey() const;
             byte_vector getPrivateKey() const;
 
+            size_t getMaxPlainTextLength_() const;
+            size_t getFixedCipherTextLength_() const;
+
             //TODO (not implemented as of yet)
-            void saveKeysToFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
+            void saveKeysToFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME,
                 const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME) const;
-            static void generateKeyFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME, 
+            static void generateKeyFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME,
                 const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME);
 
 

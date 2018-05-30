@@ -154,6 +154,14 @@ namespace crypto {
             throw std::runtime_error("Decryption key is not initialized for RSACrypto object.");
     }
 
+    size_t RSACrypto::getMaxPlainTextLength_() const {
+        return maxPlainTextLength_;
+    }
+
+    size_t RSACrypto::getFixedCipherTextLength_() const {
+        return fixedCipherTextLength_;
+    }
+
 
     byte_vector RSAServerCrypto::loadKeyFromFile(const std::string &keyFilename) {
         std::string keyStr;
@@ -219,6 +227,14 @@ namespace crypto {
 
     const char* RSAServerCrypto::DEFAULT_PUBLIC_KEY_FILENAME = "rsa-public.key";
     const char* RSAServerCrypto::DEFAULT_PRIVATE_KEY_FILENAME = "rsa-private.key";
+
+    size_t RSAServerCrypto::getMaxPlainTextLength_() const {
+        return rsaCrypto_.getMaxPlainTextLength_();
+    }
+
+    size_t RSAServerCrypto::getFixedCipherTextLength_() const {
+        return rsaCrypto_.getFixedCipherTextLength_();
+    }
 
     /*struct SymmetricKeyAndIV {
         std::string key;

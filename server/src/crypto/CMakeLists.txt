@@ -1,7 +1,9 @@
 project(Locus_crypto)
 
 set(SOURCE_FILES
-        Crypto.cpp Crypto.h keysGenerator.h)
+        Crypto.cpp Crypto.h
+        keysGenerator.cpp keysGenerator.h
+        CryptoModule.cpp CryptoModule.h)
 
 add_subdirectory(test)
 
