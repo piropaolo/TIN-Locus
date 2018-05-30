@@ -6,7 +6,7 @@
 #include "log/Logger.h"
 #include "buffer/Converter.h"
 
-using namespace log;
+using namespace Log;
 using namespace packet;
 using namespace message;
 

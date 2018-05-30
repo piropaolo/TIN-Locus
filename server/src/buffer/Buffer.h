@@ -40,6 +40,8 @@ public:
     virtual std::vector<unsigned char> pop();
 
     virtual std::vector<unsigned char> pop(const size_t &n);
+    
+    virtual std::vector<unsigned char> popAll();
 
 private:
     std::list<std::vector<unsigned char> > buffer;

@@ -3,12 +3,11 @@
 
 #include <memory>
 #include "DecoratorClient.h"
+#include "crypto/CryptoModule.h"
 
 class EncryptClient : public DecoratorClient {
 public:
     explicit EncryptClient(std::unique_ptr<Client> &&client);
-
-    EncryptClient(EncryptClient&&) noexcept = default;
 
     ~EncryptClient() override = default;
 
@@ -17,6 +16,11 @@ public:
 
     void sendData(const std::vector<unsigned char> &bytes) override;
     std::vector<unsigned char> recvData() override;
+
+    crypto::CryptoModule &getCryptoModule();
+
+private:
+    crypto::CryptoModule cryptoModule;
 };
 
 

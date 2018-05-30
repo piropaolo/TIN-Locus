@@ -1,7 +1,7 @@
 #include "EncryptClient.h"
 #include "log/Logger.h"
 
-using namespace log;
+using namespace Log;
 using namespace message;
 using namespace std::chrono_literals;
 
@@ -32,11 +32,13 @@ void EncryptClient::recv() {
 }
 
 void EncryptClient::sendData(const std::vector<unsigned char> &bytes) {
-    //szyfruj
-    client->sendData(bytes);
+    client->sendData(cryptoModule.encrypt(bytes));
 }
 
 std::vector<unsigned char> EncryptClient::recvData() {
-    //deszyfruj
-    return client->recvData();
+    return cryptoModule.decrypt(client->recvData());
+}
+
+crypto::CryptoModule &EncryptClient::getCryptoModule() {
+    return cryptoModule;
 }

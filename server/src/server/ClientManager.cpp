@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-using namespace log;
+using namespace Log;
 using namespace message;
 using namespace std::chrono_literals;
 
@@ -78,7 +78,8 @@ void ClientManager::addClient(const int &fileDescriptor, const sockaddr &sock_ad
     auto encryptClient = std::make_unique<EncryptClient>(std::move(simpleClient));
     
     //Create ProtocolClient
-    auto protocolClient = std::make_unique<ProtocolClient>(std::move(encryptClient));
+            auto cryptoModule = &encryptClient->getCryptoModule();
+    auto protocolClient = std::make_unique<ProtocolClient>(std::move(encryptClient), *cryptoModule);
     
     //Add client to map
     clientsMap.emplace(fileDescriptor, std::move(protocolClient));

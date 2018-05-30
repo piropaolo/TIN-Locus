@@ -75,3 +75,7 @@ std::vector<unsigned char> Buffer::pop(const size_t &n) {
 const size_t Buffer::frontSize() const {
     return buffer.front().size();
 }
+
+std::vector<unsigned char> Buffer::popAll() {
+    return pop(size());
+}
