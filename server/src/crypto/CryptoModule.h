@@ -10,19 +10,18 @@ namespace crypto {
     public:
         enum class Algorithm : unsigned int {
             None,
-            RSA,
+            ServerRSA,
+            OuterRSA,
             AES
         };
 
         CryptoModule() = default;
 
         void setOuterRSAKey(const byte_vector &key);
-        byte_vector encryptRSA(const byte_vector &text);
-        byte_vector decryptRSA(const byte_vector &cipher);
+        byte_vector encryptRSA(RSACrypto *rsaCrypto, const byte_vector &text);
+        byte_vector decryptRSA(RSACrypto *rsaCrypto, const byte_vector &cipher);
 
         byte_vector getSymmetricKey() const;
-        byte_vector encryptAES(const byte_vector &text);
-        byte_vector decryptAES(const byte_vector &cipher);
 
         void use(const Algorithm &algo);
         byte_vector encrypt(const byte_vector &text);
@@ -30,8 +29,9 @@ namespace crypto {
 
     private:
         RSAServerCrypto rsaServerCrypto;
-        RSACrypto rsaCrypto;
+        RSASimpleCrypto rsaSimpleCrypto;
         AESCrypto aesCrypto;
+        
         bool outerRSAKey = false;
         Algorithm algorithm = Algorithm::None;
     };

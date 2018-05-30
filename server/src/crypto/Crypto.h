@@ -16,20 +16,29 @@ namespace crypto {
     typedef std::vector<unsigned char> byte_vector;
 
     class RSACrypto {
-        public:
-            RSACrypto();
-            RSACrypto(const byte_vector &encryptKey, const byte_vector &decryptKey);
+    public:
+        virtual byte_vector encrypt(const byte_vector &text) = 0;
+        virtual byte_vector decrypt(const byte_vector &cipher) = 0;
 
-            byte_vector encrypt(const byte_vector &text);
-            byte_vector decrypt(const byte_vector &cipher);
+        virtual size_t getMaxPlainTextLength_() const = 0;
+        virtual size_t getFixedCipherTextLength_() const = 0;
+    };
+    
+    class RSASimpleCrypto : public RSACrypto {
+        public:
+            RSASimpleCrypto();
+            RSASimpleCrypto(const byte_vector &encryptKey, const byte_vector &decryptKey);
+
+            byte_vector encrypt(const byte_vector &text) override;
+            byte_vector decrypt(const byte_vector &cipher) override;
 
             void setEncryptionKey(const byte_vector &encryptKey);
             void setDecryptionKey(const byte_vector &decryptKey);
             byte_vector getEncryptionKey() const;
             byte_vector getDecryptionKey() const;
 
-            size_t getMaxPlainTextLength_() const;
-            size_t getFixedCipherTextLength_() const;
+            size_t getMaxPlainTextLength_() const override;
+            size_t getFixedCipherTextLength_() const override;
 
     private:
             RSA::PrivateKey privateKey_;    // key used for decryption
@@ -51,19 +60,19 @@ namespace crypto {
             inline void testIfPrivateKeyInitialized() const;
     };
 
-    class RSAServerCrypto {
+    class RSAServerCrypto : public RSACrypto  {
         public:
             RSAServerCrypto(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME,
                 const std::string &privateKeyFilename = DEFAULT_PRIVATE_KEY_FILENAME);
 
-            byte_vector encrypt(const byte_vector &text);
-            byte_vector decrypt(const byte_vector &cipher);
+            byte_vector encrypt(const byte_vector &text) override;
+            byte_vector decrypt(const byte_vector &cipher) override;
 
             byte_vector getPublicKey() const;
             byte_vector getPrivateKey() const;
 
-            size_t getMaxPlainTextLength_() const;
-            size_t getFixedCipherTextLength_() const;
+            size_t getMaxPlainTextLength_() const override;
+            size_t getFixedCipherTextLength_() const override;
 
             //TODO (not implemented as of yet)
             void saveKeysToFiles(const std::string &publicKeyFilename = DEFAULT_PUBLIC_KEY_FILENAME,
@@ -73,7 +82,7 @@ namespace crypto {
 
 
         private:
-            crypto::RSACrypto rsaCrypto_;
+            crypto::RSASimpleCrypto rsaCrypto_;
             //std::string encryptKeyFilename;
             //std::string decryptKeyFilename;
             static const char* DEFAULT_PUBLIC_KEY_FILENAME;

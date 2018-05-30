@@ -10,9 +10,9 @@
 using namespace CryptoPP;
 
 namespace crypto {
-    RSACrypto::RSACrypto() : publicKeyInitialized_(false), privateKeyInitialized_(false) {}
+    RSASimpleCrypto::RSASimpleCrypto() : publicKeyInitialized_(false), privateKeyInitialized_(false) {}
 
-    RSACrypto::RSACrypto(const byte_vector &encryptKey, const byte_vector &decryptKey) {
+    RSASimpleCrypto::RSASimpleCrypto(const byte_vector &encryptKey, const byte_vector &decryptKey) {
         {
             StringSource encryptKeySource(encryptKey.data(), encryptKey.size(), true);
             ByteQueue queue;
@@ -39,7 +39,7 @@ namespace crypto {
         privateKeyInitialized_ = true;
     }
 
-    byte_vector RSACrypto::encrypt(const byte_vector &text) {
+    byte_vector RSASimpleCrypto::encrypt(const byte_vector &text) {
         testIfPublicKeyInitialized();
         //NOTE: for RSA 512 (OAEP SHA) max text length is 22 (bytes)
         if (text.size() > maxPlainTextLength_) {
@@ -61,7 +61,7 @@ namespace crypto {
         return byte_vector(cipher.begin(), cipher.end());
     }
 
-    byte_vector RSACrypto::decrypt(const byte_vector &cipher) {
+    byte_vector RSASimpleCrypto::decrypt(const byte_vector &cipher) {
         testIfPrivateKeyInitialized();
         if (cipher.size() != fixedCipherTextLength_) {
             std::ostringstream errorMsg;
@@ -82,7 +82,7 @@ namespace crypto {
         return byte_vector(recovered.begin(), recovered.end());
     }
 
-    void RSACrypto::setEncryptionKey(const byte_vector &encryptKey) {
+    void RSASimpleCrypto::setEncryptionKey(const byte_vector &encryptKey) {
         StringSource encryptKeySource(encryptKey.data(), encryptKey.size(), true);
         ByteQueue queue;
         encryptKeySource.TransferTo(queue);
@@ -95,7 +95,7 @@ namespace crypto {
         initCryptors();
         publicKeyInitialized_ = true;
     }
-    void RSACrypto::setDecryptionKey(const byte_vector &decryptKey) {
+    void RSASimpleCrypto::setDecryptionKey(const byte_vector &decryptKey) {
         StringSource decryptKeySource(decryptKey.data(), decryptKey.size(), true);
         ByteQueue queue;
         decryptKeySource.TransferTo(queue);
@@ -109,7 +109,7 @@ namespace crypto {
         privateKeyInitialized_ = true;
     }
 
-    byte_vector RSACrypto::getEncryptionKey() const {
+    byte_vector RSASimpleCrypto::getEncryptionKey() const {
         testIfPublicKeyInitialized();
         std::string keyString;
 
@@ -122,7 +122,7 @@ namespace crypto {
         return byte_vector(keyString.begin(), keyString.end());
     }
 
-    byte_vector RSACrypto::getDecryptionKey() const {
+    byte_vector RSASimpleCrypto::getDecryptionKey() const {
         testIfPrivateKeyInitialized();
         std::string keyString;
 
@@ -135,7 +135,7 @@ namespace crypto {
         return byte_vector(keyString.begin(), keyString.end());
     }
 
-    void RSACrypto::initCryptors() {
+    void RSASimpleCrypto::initCryptors() {
         RSAES_OAEP_SHA_Encryptor encryptor(publicKey_);
         encryptor_ = encryptor;
         maxPlainTextLength_ = encryptor_.FixedMaxPlaintextLength();
@@ -145,20 +145,20 @@ namespace crypto {
         fixedCipherTextLength_ = decryptor_.FixedCiphertextLength();
     }
 
-    inline void RSACrypto::testIfPublicKeyInitialized() const {
+    inline void RSASimpleCrypto::testIfPublicKeyInitialized() const {
         if (!publicKeyInitialized_)
-            throw std::runtime_error("Encryption key is not initialized for RSACrypto object.");
+            throw std::runtime_error("Encryption key is not initialized for RSASimpleCrypto object.");
     }
-    inline void RSACrypto::testIfPrivateKeyInitialized() const {
+    inline void RSASimpleCrypto::testIfPrivateKeyInitialized() const {
         if (!privateKeyInitialized_)
-            throw std::runtime_error("Decryption key is not initialized for RSACrypto object.");
+            throw std::runtime_error("Decryption key is not initialized for RSASimpleCrypto object.");
     }
 
-    size_t RSACrypto::getMaxPlainTextLength_() const {
+    size_t RSASimpleCrypto::getMaxPlainTextLength_() const {
         return maxPlainTextLength_;
     }
 
-    size_t RSACrypto::getFixedCipherTextLength_() const {
+    size_t RSASimpleCrypto::getFixedCipherTextLength_() const {
         return fixedCipherTextLength_;
     }
 

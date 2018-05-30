@@ -1,6 +1,5 @@
 #include "ProtocolClient.h"
 #include "log/Logger.h"
-#include "buffer/RandomStringGenerator.h"
 
 using namespace Log;
 using namespace message;
@@ -11,6 +10,8 @@ using namespace std::chrono_literals;
 ProtocolClient::ProtocolClient(std::unique_ptr<Client> &&client, crypto::CryptoModule &cryptoModule)
         : DecoratorClient(std::move(client)), cryptoModule(cryptoModule) {
     Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) + ": Created");
+    
+    cryptoModule.use(CryptoModule::Algorithm::ServerRSA);
 }
 
 void ProtocolClient::recv() {
@@ -41,7 +42,8 @@ void ProtocolClient::recv() {
             break;
 
         default:
-            Logger::getInstance().logDebug("ProtocolClient: Get unexpected message: " + msg.toString());
+            Logger::getInstance().logDebug("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                           ": Get unexpected message: " + msg.toString());
     }
 }
 
@@ -54,7 +56,7 @@ std::vector<unsigned char> ProtocolClient::recvData() {
 }
 
 void ProtocolClient::sendRemainingData() {
-    if(!remainingPackets.empty()) {
+    if (!remainingPackets.empty()) {
         sendPacket(remainingPackets.front());
         remainingPackets.pop();
     }
@@ -67,14 +69,8 @@ void ProtocolClient::receiveData() {
         case Stage::SetPublicKey:
             setPublicKey(packet);
             break;
-        case Stage::TestPublicKey:
-            testPublicKey(packet);
-            break;
         case Stage::SetSymmetricKey:
             setSymmetricKey(packet);
-            break;
-        case Stage::TestSymmetricKey:
-            testSymmetricKey(packet);
             break;
         case Stage::Else:
             elsePacket(packet);
@@ -82,100 +78,81 @@ void ProtocolClient::receiveData() {
 }
 
 void ProtocolClient::setPublicKey(packet::Packet &packet) {
-    switch (packet.getType()) {
-        case packet::PacketType::PUBLIC_KEY: {
-            //set new key
-            cryptoModule.setOuterRSAKey(packet.getBuffer().popAll());
-            Logger::getInstance().logMessage("ProtocolClient: Set new public key");
+    if (packet.getType() == packet::PacketType::PUBLIC_KEY) {
+        //set new key
+        cryptoModule.setOuterRSAKey(packet.getBuffer().popAll());
+        Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                         ": Set new public key");
 
-            //send test for public key
-            Packet newPacket(PacketType::TEST_KEY);
-            testKey = randomStringGenerator(30);
-            newPacket.getBuffer().push_back(testKey);
-            sendPacket(newPacket);
-            Logger::getInstance().logMessage("ProtocolClient: Send testPublicKey");
-
-            stage = Stage::TestPublicKey;
-            break;
-        }
-        default:
-            Logger::getInstance().logError("ProtocolClient: Get wrong packet in SetPublicKey stage: " +
-                                           PacketType::toUInt8(packet.getType()));
-    }
-}
-
-void ProtocolClient::testPublicKey(packet::Packet &packet) {
-    switch (packet.getType()) {
-        case packet::PacketType::PUBLIC_KEY: {
-            //check validation of test
-            if (testKey != packet.getBuffer().popAll()) {
-                Logger::getInstance().logError("ProtocolClient: Get wrong testPublicKey: " +
-                                               PacketType::toUInt8(packet.getType()));
-                Logger::getInstance().logError("ProtocolClient: Closing connection");
-                closeConnection();
-            }
-            Logger::getInstance().logMessage("ProtocolClient: testPublicKey is correct");
-
-            //send symmetric key
-            Packet newPacket(PacketType::SYMMETRIC_KEY);
-            newPacket.getBuffer().push_back(cryptoModule.getSymmetricKey());
-            sendPacket(newPacket);
-            Logger::getInstance().logMessage("ProtocolClient: Send symmetric key");
-
-            stage = Stage::SetSymmetricKey;
-            break;
-        }
-        default:
-            Logger::getInstance().logError("ProtocolClient: Get wrong packet in SetPublicKey stage: " +
-                                           PacketType::toUInt8(packet.getType()));
+        cryptoModule.use(CryptoModule::Algorithm::OuterRSA);
+        
+        //send symmetric key
+        Packet newPacket(PacketType::SYMMETRIC_KEY);
+        newPacket.getBuffer().push_back(cryptoModule.getSymmetricKey());
+        sendPacket(newPacket);
+        Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                         ": Send symmetric key");
+        
+        stage = Stage::SetSymmetricKey;
+    } else {
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Get wrong packet in SetPublicKey stage: " +
+                                       std::to_string(PacketType::toUInt8(packet.getType())));
     }
 }
 
 void ProtocolClient::setSymmetricKey(packet::Packet &packet) {
-    switch (packet.getType()) {
-        case packet::PacketType::ACK_OK: {
-            //set AES encryption
-            cryptoModule.use(CryptoModule::Algorithm::AES);
-            Logger::getInstance().logMessage("ProtocolClient: Set symmetric encryption");
-
-            //send test for key
-            Packet newPacket(PacketType::TEST_KEY);
-            testKey = randomStringGenerator(30);
-            newPacket.getBuffer().push_back(testKey);
-            sendPacket(newPacket);
-            Logger::getInstance().logMessage("ProtocolClient: Send TestSymmetricKey");
-
-            stage = Stage::TestSymmetricKey;
-            break;
+    if (packet.getType() == packet::PacketType::SYMMETRIC_KEY) {
+        //check validation of test
+        if (cryptoModule.getSymmetricKey() != packet.getBuffer().popAll()) {
+            Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                           ": Get wrong returning symmetric key");
+            
+            Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                           ": Closing connection");
+            closeConnection();
         }
-        default:
-            Logger::getInstance().logError("ProtocolClient: Get wrong packet in SetSymmetricKey stage: " +
-                                           PacketType::toUInt8(packet.getType()));
+        Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                         ": returning symmetric key is correct");
+        
+        //set AES encryption
+        cryptoModule.use(CryptoModule::Algorithm::AES);
+        Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                         ": Set symmetric encryption");
+        
+        stage = Stage::Else;
+    } else {
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Get wrong packet in SetSymmetricKey stage: " +
+                                       std::to_string(PacketType::toUInt8(packet.getType())));
     }
 }
 
-void ProtocolClient::testSymmetricKey(packet::Packet &packet) {
+void ProtocolClient::elsePacket(packet::Packet &packet) {
+    Logger::getInstance().logMessage("ProtocolClient: Get packet");
     switch (packet.getType()) {
-        case packet::PacketType::TEST_KEY: {
-            //check validation of test
-            if (testKey != packet.getBuffer().popAll()) {
-                Logger::getInstance().logError("ProtocolClient: Get wrong test: " +
-                                               PacketType::toUInt8(packet.getType()));
-                Logger::getInstance().logError("ProtocolClient: Closing connection");
-                closeConnection();
-            }
-            Logger::getInstance().logMessage("ProtocolClient: TestSymmetricKey is correct");
-
-            Logger::getInstance().logMessage("ProtocolClient: Connection is stabilized");
-            stage = Stage::Else;
+        case PacketType::CLOSE:
+            closeConnection();
             break;
-        }
+        case PacketType::SET_NAME:
+            setName(packet);
+            break;
+        case PacketType::ADD_FOLLOWER:
+            break;
+        case PacketType::REMOVE_FOLLOWER:
+            break;
+        case PacketType::REMOVE_FOLLOWED:
+            break;
+        case PacketType::MY_LOCATION:
+            break;
+
         default:
             Logger::getInstance().logError("ProtocolClient: Get wrong packet in TestSymmetricKey stage: " +
                                            PacketType::toUInt8(packet.getType()));
     }
 }
 
-void ProtocolClient::elsePacket(packet::Packet &packet) {
-    Logger::getInstance().logMessage("ProtocolClient: Get packet");
+void ProtocolClient::setName(packet::Packet &packet) {
+    Packet newPacket(PacketType::ACK_OK);
+    sendPacket(newPacket);
 }
