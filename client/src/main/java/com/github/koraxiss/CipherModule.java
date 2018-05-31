@@ -107,7 +107,7 @@ public class CipherModule {
 
         X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(serverPublicBytes);
         KeyFactory pubKeyFactory = KeyFactory.getInstance("RSA");
-        PublicKey pubKey = pubKeyFactory.generatePublic(pubKeySpec);
+        serverPublicKey = pubKeyFactory.generatePublic(pubKeySpec);
     }
 
     static void setSessionKey(String key){
