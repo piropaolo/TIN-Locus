@@ -60,6 +60,7 @@ public class Client {
                             if(message.getType() != Message.MessageType.PACKET && message.getPacket().getType() != PacketType._ACK_OK)
                                 stop();
                             CipherModule.setState(CipherModule.State.SESSION);
+                            CipherModule.initializeSessionCiphers();
                             break;
                         case _TEST_KEY:
 //                            do something with challenge;
