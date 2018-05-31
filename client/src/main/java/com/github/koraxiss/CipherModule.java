@@ -110,14 +110,14 @@ public class CipherModule {
         serverPublicKey = pubKeyFactory.generatePublic(pubKeySpec);
     }
 
-    static void setSessionKey(String key){
-        sessionKey = new SecretKeySpec(Converter.stringToByte(key), "AES");
+    static void setSessionKey(byte[] key){
+        sessionKey = new SecretKeySpec(key, "AES");
     }
 
     static void initializeClientCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IOException, InvalidKeySpecException {
         loadKeyPair();
-        encryptClientPrivate = Cipher.getInstance("RSA");
-        decryptClientPrivate = Cipher.getInstance("RSA");
+        encryptClientPrivate = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        decryptClientPrivate = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
         encryptClientPrivate.init(Cipher.ENCRYPT_MODE, keyPair.getPrivate());
         decryptClientPrivate.init(Cipher.DECRYPT_MODE, keyPair.getPrivate());
@@ -125,19 +125,19 @@ public class CipherModule {
 
     static void initializeServerCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException, IOException, InvalidKeySpecException {
         loadServerPublic();
-        encryptServerPublic = Cipher.getInstance("RSA");
-        decryptServerPublic = Cipher.getInstance("RSA");
+        encryptServerPublic = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+        decryptServerPublic = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
         encryptServerPublic.init(Cipher.ENCRYPT_MODE, serverPublicKey);
         decryptServerPublic.init(Cipher.DECRYPT_MODE, serverPublicKey);
     }
 
     static void initializeSessionCiphers() throws NoSuchPaddingException, NoSuchAlgorithmException, InvalidKeyException {
-        encryptSession = Cipher.getInstance("AES");
-        decryptSession = Cipher.getInstance("AES");
+        encryptSession = Cipher.getInstance("AES/ECB/PKCS5Padding");
+        decryptSession = Cipher.getInstance("AES/ECB/PKCS5Padding");
 
         encryptSession.init(Cipher.ENCRYPT_MODE, sessionKey);
-        encryptSession.init(Cipher.ENCRYPT_MODE, sessionKey);
+        decryptSession.init(Cipher.DECRYPT_MODE, sessionKey);
     }
 
 
@@ -161,7 +161,7 @@ public class CipherModule {
                 return decryptClientPrivate.doFinal(buffer, offset, n);
 //                return decryptServerPublic.doFinal(temp);
             case SESSION:
-                return encryptSession.doFinal(buffer, offset, n);
+                return decryptSession.doFinal(buffer, offset, n);
             default:
                 throw new RuntimeException("CipherModule state not known.");
         }

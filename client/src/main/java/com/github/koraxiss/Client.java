@@ -32,6 +32,7 @@ public class Client {
         Message message;
         while (running) {
             try {
+//                sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
                 message = childMessages.take();
                 if (message.getType() == Message.MessageType.PACKET) {
                     switch(message.getPacket().getType()) {
@@ -41,26 +42,30 @@ public class Client {
                             sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
                             break;
                         case _OPEN_ENCR:
+                            System.out.println("Received open encr");
                             CipherModule.initializeClientCiphers();
                             CipherModule.initializeServerCiphers();
                             layerManager.setEncryptionOn(true);
                             CipherModule.setState(CipherModule.State.SERVER_PUBLIC);
                             Packet packet6 = new Packet(PacketType._PUBLIC_KEY);
-                            packet6.setArg1(CipherModule.getKeyPair().getPublic());
+                            packet6.setArg1(CipherModule.getKeyPair().getPublic().getEncoded());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet6));
+                            System.out.println("Ordered to send public key");
                             CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
                             break;
                         case _CLOSE:
                             stop();
                             break;
                         case _SYMMETRIC_KEY:
-                            CipherModule.setSessionKey((String) message.getPacket().getArg1());
+                            CipherModule.setSessionKey((byte[]) message.getPacket().getArg1());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, message.getPacket()));
-                            message = childMessages.take();
-                            if(message.getType() != Message.MessageType.PACKET && message.getPacket().getType() != PacketType._ACK_OK)
-                                stop();
+//                            message = childMessages.take();
+                            Thread.sleep(400);
                             CipherModule.setState(CipherModule.State.SESSION);
                             CipherModule.initializeSessionCiphers();
+                            System.out.println("Some random println");
+//                            if(message.getType() != Message.MessageType.PACKET && message.getPacket().getType() != PacketType._ACK_OK)
+//                                stop();
                             break;
                         case _TEST_KEY:
 //                            do something with challenge;
@@ -115,18 +120,12 @@ public class Client {
                 } else
                     stop();
                 Thread.sleep(100);
-            } catch (InterruptedException e) {
+            } catch (InterruptedException | IOException e) {
+                stop();
                 e.printStackTrace();
-            } catch (NoSuchPaddingException e) {
+            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
                 e.printStackTrace();
-            } catch (NoSuchAlgorithmException e) {
-                e.printStackTrace();
-            } catch (InvalidKeyException e) {
-                e.printStackTrace();
-            } catch (InvalidKeySpecException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+                stop();
             }
         }
     }
@@ -148,25 +147,31 @@ public class Client {
 
         @Override
         public void run() {
-            Packet packet = null;
+            Packet packet;
             while (running) {
                 try {
-                    byte[] bytes = new byte[5];
-                    layerManager.receive();
-//                    packet = layerManager.receive();
-                    packet = new Packet(PacketType._OPEN);
-                    packet.setArg1(Converter.byteToString(bytes));
-                    childMessages.put(new Message(Message.MessageType.PACKET, packet));
-                    Thread.sleep(500);
-                } catch (IOException e1) {
+//                    byte[] bytes = new byte[5];
+//                    layerManager.receive();
+                    packet = layerManager.receive();
+//                    packet = new Packet(PacketType._OPEN);
+//                    packet.setArg1(Converter.byteToString(bytes));
+                    Message message = new Message(Message.MessageType.PACKET, packet);
+                    childMessages.put(message);
+                    Thread.sleep(1000);
+                } catch (IOException | InterruptedException e1) {
 //                    e1.printStackTrace();
                     try {
                         childMessages.put(new Message(Message.MessageType.ERROR, null));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                } catch (InterruptedException e) {
+                } catch (Exception e) {
 //                    e.printStackTrace();
+                    try {
+                        childMessages.put(new Message(Message.MessageType.ERROR, null));
+                    } catch (InterruptedException e1) {
+//                        e1.printStackTrace();
+                    }
                 }
             }
         }
@@ -185,16 +190,14 @@ public class Client {
                         packet = message.getPacket();
                         layerManager.send(packet);
                     }
-                    Thread.sleep(500);
-                } catch (IOException e1) {
-//                    e1.printStackTrace();
+                    Thread.sleep(100);
+                } catch (IOException | InterruptedException e1) {
+                    e1.printStackTrace();
                     try {
                         childMessages.put(new Message(Message.MessageType.ERROR, null));
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                } catch (InterruptedException e) {
-//                    e.printStackTrace();
                 }
             }
         }
