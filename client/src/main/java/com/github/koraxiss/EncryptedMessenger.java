@@ -13,7 +13,13 @@ public class EncryptedMessenger implements Messenger {
 
     public void send(byte[] buffer, int n) throws IOException {
         try {
-            CipherModule.encrypt(buffer, 0, n);
+            if (CipherModule.getState() != CipherModule.State.SESSION) {
+                for (int i = 0; i * 22 < n; ++i) {
+                    int numberToEncrypt = i * 22 < n ? 22 : n - ((i - 1) * 22);
+                    CipherModule.encrypt(buffer, i * 22, numberToEncrypt);
+                }
+            } else
+                CipherModule.encrypt(buffer, 0, n);
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
         }

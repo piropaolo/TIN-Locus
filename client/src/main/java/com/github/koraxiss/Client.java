@@ -1,6 +1,10 @@
 package com.github.koraxiss;
 
+import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -37,11 +41,12 @@ public class Client {
                             sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
                             break;
                         case _OPEN_ENCR:
-//                            CipherModule.init();
+                            CipherModule.initializeClientCiphers();
+                            CipherModule.initializeServerCiphers();
                             layerManager.setEncryptionOn(true);
                             CipherModule.setState(CipherModule.State.SERVER_PUBLIC);
                             Packet packet6 = new Packet(PacketType._PUBLIC_KEY);
-//                            packet.setArg1(client public key);
+                            packet6.setArg1(CipherModule.getKeyPair().getPublic());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet6));
                             CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
                             break;
@@ -49,8 +54,12 @@ public class Client {
                             stop();
                             break;
                         case _SYMMETRIC_KEY:
-//                            CipherModule.setSessionKey();
-//                            CipherModule.setState(CipherModule.State.SESSION);
+                            CipherModule.setSessionKey((String) message.getPacket().getArg1());
+                            sendInstructions.put(new Message(Message.MessageType.PACKET, message.getPacket()));
+                            message = childMessages.take();
+                            if(message.getType() != Message.MessageType.PACKET && message.getPacket().getType() != PacketType._ACK_OK)
+                                stop();
+                            CipherModule.setState(CipherModule.State.SESSION);
                             break;
                         case _TEST_KEY:
 //                            do something with challenge;
@@ -106,6 +115,16 @@ public class Client {
                     stop();
                 Thread.sleep(100);
             } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (NoSuchPaddingException e) {
+                e.printStackTrace();
+            } catch (NoSuchAlgorithmException e) {
+                e.printStackTrace();
+            } catch (InvalidKeyException e) {
+                e.printStackTrace();
+            } catch (InvalidKeySpecException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
