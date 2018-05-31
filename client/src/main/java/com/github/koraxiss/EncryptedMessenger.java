@@ -14,9 +14,13 @@ public class EncryptedMessenger implements Messenger {
     public void send(byte[] buffer, int n) throws IOException {
         try {
             if (CipherModule.getState() != CipherModule.State.SESSION) {
-                for (int i = 0; i * 22 < n; ++i) {
-                    int numberToEncrypt = i * 22 < n ? 22 : n - ((i - 1) * 22);
-                    CipherModule.encrypt(buffer, i * 22, numberToEncrypt);
+                int bytesLeft = n;
+                int counter = 0;
+                while(bytesLeft > 0) {
+                    int numberToEncrypt = bytesLeft > 86 ? 86 : bytesLeft;
+                    CipherModule.encrypt(buffer, counter * 86, numberToEncrypt);
+                    bytesLeft -= numberToEncrypt;
+                    ++counter;
                 }
             } else
                 CipherModule.encrypt(buffer, 0, n);
