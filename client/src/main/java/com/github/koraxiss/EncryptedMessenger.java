@@ -33,7 +33,17 @@ public class EncryptedMessenger implements Messenger {
     public int receive(byte[] buffer, int n) throws IOException {
         int i = simpleMessenger.receive(buffer, n);
         try {
-            CipherModule.decrypt(buffer, 0, i);
+            if (CipherModule.getState() != CipherModule.State.SESSION) {
+                int bytesLeft = n;
+                int counter = 0;
+                while(bytesLeft > 0) {
+                    int numberToDecrypt = bytesLeft > 22 ? 22 : bytesLeft;
+                    CipherModule.decrypt(buffer, counter * 22, numberToDecrypt);
+                    bytesLeft -= numberToDecrypt;
+                    ++counter;
+                }
+            } else
+                CipherModule.decrypt(buffer, 0, n);
         } catch (BadPaddingException | IllegalBlockSizeException e) {
             e.printStackTrace();
         }
