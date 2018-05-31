@@ -4,7 +4,6 @@ include_directories(${gtest_SOURCE_DIR}/include &{gtest_SOURCE_DIR})
 
 add_executable(${PROJECT_NAME}
         PacketType_test.cpp
-        Converter_test.cpp
         Packet_test.cpp
         )
 

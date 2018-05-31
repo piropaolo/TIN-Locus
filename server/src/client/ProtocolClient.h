@@ -10,7 +10,8 @@ class ProtocolClient : public DecoratorClient {
     enum class Stage : int {
         SetPublicKey,
         SetSymmetricKey,
-        Else
+        Else,
+        Exit
     };
 public:
     explicit ProtocolClient(std::unique_ptr<Client> &&client, crypto::CryptoModule &cryptoModule);
@@ -33,9 +34,9 @@ private:
     void sendRemainingData();
     void receiveData();
 
-    void setPublicKey(packet::Packet &packet);
-    void setSymmetricKey(packet::Packet &packet);
-    void elsePacket(packet::Packet &packet);
+    void setPublicKey();
+    void setSymmetricKey();
+    void elsePacket();
 
     void setName(packet::Packet &packet);
 };

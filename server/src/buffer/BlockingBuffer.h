@@ -19,6 +19,8 @@ public:
 
     std::vector<unsigned char> pop(const size_t &n) override;
 
+    std::vector<unsigned char> popAll() override;
+
 private:
     std::mutex accessMutex;
 };

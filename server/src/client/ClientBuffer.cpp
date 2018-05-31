@@ -27,6 +27,7 @@ BlockingBuffer &ClientBuffer::getBufferOut() {
 }
 
 std::vector<unsigned char> ClientBuffer::recv(const size_t &n) const {
+    Logger::getInstance().logDebug("ClientBuffer: try to receive " + std::to_string(n) + " bytes.");
     std::vector<unsigned char> buffer(n);
     size_t remaining = n;
 
@@ -65,10 +66,11 @@ void ClientBuffer::recv() {
 
     //get size of upcoming packet
     if (!isClose() && bufferIn.getStage() == BlockingBuffer::Stage::Empty) {
-        auto buffer = recv(1);
+        auto buffer = recv(2);
         if (!buffer.empty()) {
-            uint8_t size = 0;
+            uint16_t size = 0;
             from_bytes(buffer, size);
+            Logger::getInstance().logDebug("ClientBuffer: new packet will have " + std::to_string(size) + " bytes.");
             bufferIn.setMaxSize(size);
             bufferIn.setStage(BlockingBuffer::Stage::Receiving);
         }
@@ -80,6 +82,7 @@ void ClientBuffer::recv() {
         if (!buffer.empty()) {
             bufferIn.push_back(std::move(buffer));
             if (bufferIn.remainingSize() == 0) {
+                Logger::getInstance().logDebug("ClientBuffer: new packet have " + std::to_string(bufferIn.size()) + " bytes.");
                 bufferIn.setStage(BlockingBuffer::Stage::Full);
                 //notify client
                 if(clientBlockingQueue) {
@@ -125,7 +128,7 @@ std::vector<unsigned char> ClientBuffer::send(std::vector<unsigned char> buffer)
 void ClientBuffer::send() {
     //set size of sending packet
     if (!isClose() && bufferOut.getStage() == BlockingBuffer::Stage::Full) {
-        const auto size = static_cast<uint8_t>(bufferOut.size());
+        const auto size = static_cast<uint16_t>(bufferOut.size());
         bufferOut.push_front(to_bytes(size));
         bufferOut.setMaxSize(bufferOut.size());
         bufferOut.setStage(BlockingBuffer::Stage::Sending);

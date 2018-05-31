@@ -50,8 +50,15 @@ void SimpleClient::sendData(const std::vector<unsigned char> &bytes) {
 }
 
 std::vector<unsigned char> SimpleClient::recvData() {
-    clientBuffer->getBufferOut().setStage(BlockingBuffer::Stage::Empty);
-    return clientBuffer->getBufferOut().pop(clientBuffer->getBufferOut().size());
+    Logger::getInstance().logDebug("SimpleClient: Try pop clientBuffer: " +
+                                   std::to_string(clientBuffer->getBufferIn().size()));
+
+    auto bytes = clientBuffer->getBufferIn().pop(clientBuffer->getBufferIn().size());
+
+    Logger::getInstance().logDebug("SimpleClient: Receive bytes: " + std::to_string(bytes.size()));
+
+    clientBuffer->getBufferIn().setStage(BlockingBuffer::Stage::Empty);
+    return bytes;
 }
 
 const sockaddr &SimpleClient::getClient_addr() const {

@@ -36,7 +36,10 @@ void EncryptClient::sendData(const std::vector<unsigned char> &bytes) {
 }
 
 std::vector<unsigned char> EncryptClient::recvData() {
-    return cryptoModule.decrypt(client->recvData());
+    auto bytes = client->recvData();
+    Logger::getInstance().logDebug("EncryptClient: Receive bytes: " + std::to_string(bytes.size()));
+
+    return cryptoModule.decrypt(bytes);
 }
 
 crypto::CryptoModule &EncryptClient::getCryptoModule() {

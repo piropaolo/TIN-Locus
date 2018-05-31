@@ -5,7 +5,7 @@ namespace crypto {
 
     void CryptoModule::setOuterRSAKey(const byte_vector &key) {
         rsaSimpleCrypto.setEncryptionKey(key);
-        rsaSimpleCrypto.setDecryptionKey(key);
+//        rsaSimpleCrypto.setDecryptionKey(key);
         outerRSAKey = true;
     }
 
@@ -26,7 +26,7 @@ namespace crypto {
         for (int i = 0; i < cipher.size(); i += rsaCrypto->getFixedCipherTextLength_()) {
             auto newBytes = rsaCrypto->decrypt(
                     byte_vector(cipher.begin() + i,
-                                cipher.begin() + i + rsaCrypto->getFixedCipherTextLength_()));
+                                cipher.begin() + std::min(cipher.size(), i + rsaCrypto->getFixedCipherTextLength_())));
             decryptBytes.insert(decryptBytes.end(), newBytes.begin(), newBytes.end());
         }
 

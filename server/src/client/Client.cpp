@@ -13,6 +13,8 @@ void Client::sendPacket(const Packet &packet) {
 packet::Packet Client::recvPacket() {
     packet::Packet packet;
     packet.getBuffer().push_back(recvData());
+    Logger::getInstance().logDebug("Client " + std::to_string(getConnectionFD()) +
+                                   ": Get packet with bytes: " + std::to_string(packet.getBuffer().size()));
     packet.parse();
     return packet;
 }

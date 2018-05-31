@@ -13,5 +13,9 @@ std::vector<unsigned char> BlockingBuffer::pop() {
     return Buffer::pop();
 }
 
+std::vector<unsigned char> BlockingBuffer::popAll() {
+//    std::lock_guard<std::mutex> guard(accessMutex);
+    return Buffer::popAll();
+}
 
 //}

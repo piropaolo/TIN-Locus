@@ -1,10 +1,10 @@
 #include "Crypto.h"
 
 #include <cryptopp/files.h>
+#include <cryptopp/files.h>
 
 #include <stdexcept>
 #include <sstream>
-
 #include <cstring>
 
 using namespace CryptoPP;
@@ -13,30 +13,8 @@ namespace crypto {
     RSASimpleCrypto::RSASimpleCrypto() : publicKeyInitialized_(false), privateKeyInitialized_(false) {}
 
     RSASimpleCrypto::RSASimpleCrypto(const byte_vector &encryptKey, const byte_vector &decryptKey) {
-        {
-            StringSource encryptKeySource(encryptKey.data(), encryptKey.size(), true);
-            ByteQueue queue;
-            encryptKeySource.TransferTo(queue);
-            queue.MessageEnd();
-            publicKey_.Load(queue);
-
-            if (!publicKey_.Validate(randomGenerator_, 2))
-                throw std::runtime_error("RSA public key validation failed");
-        }
-        {
-            StringSource decryptKeySource(decryptKey.data(), decryptKey.size(), true);
-            ByteQueue queue;
-            decryptKeySource.TransferTo(queue);
-            queue.MessageEnd();
-            privateKey_.Load(queue);
-
-            if (!privateKey_.Validate(randomGenerator_, 2))
-                throw std::runtime_error("RSA private key validation failed");
-        }
-
-        initCryptors();
-        publicKeyInitialized_ = true;
-        privateKeyInitialized_ = true;
+        setEncryptionKey(encryptKey);
+        setDecryptionKey(decryptKey);
     }
 
     byte_vector RSASimpleCrypto::encrypt(const byte_vector &text) {
@@ -52,10 +30,10 @@ namespace crypto {
         std::string cipher; // encrypted text
 
         StringSource ess(
-            text.data(), text.size(), true,
-            new PK_EncryptorFilter(randomGenerator_, encryptor_, 
-                new StringSink(cipher)
-            )
+                text.data(), text.size(), true,
+                new PK_EncryptorFilter(randomGenerator_, encryptor_,
+                                       new StringSink(cipher)
+                )
         );
 
         return byte_vector(cipher.begin(), cipher.end());
@@ -65,7 +43,8 @@ namespace crypto {
         testIfPrivateKeyInitialized();
         if (cipher.size() != fixedCipherTextLength_) {
             std::ostringstream errorMsg;
-            errorMsg << "Given cipher text to decrypt with RSA doesn't max the required length, which is: " << fixedCipherTextLength_;
+            errorMsg << "Given cipher text to decrypt with RSA doesn't max the required length, which is: "
+                     << fixedCipherTextLength_;
 
             throw std::length_error(errorMsg.str());
         }
@@ -73,10 +52,10 @@ namespace crypto {
         std::string recovered; // decrypted text
 
         StringSource dss(
-            cipher.data(), cipher.size(), true,
-            new PK_DecryptorFilter(randomGenerator_, decryptor_, 
-                new StringSink(recovered)
-            )
+                cipher.data(), cipher.size(), true,
+                new PK_DecryptorFilter(randomGenerator_, decryptor_,
+                                       new StringSink(recovered)
+                )
         );
 
         return byte_vector(recovered.begin(), recovered.end());
@@ -92,9 +71,10 @@ namespace crypto {
         if (!publicKey_.Validate(randomGenerator_, 2))
             throw std::runtime_error("RSA public key validation failed");
 
-        initCryptors();
         publicKeyInitialized_ = true;
+        initCryptors();
     }
+
     void RSASimpleCrypto::setDecryptionKey(const byte_vector &decryptKey) {
         StringSource decryptKeySource(decryptKey.data(), decryptKey.size(), true);
         ByteQueue queue;
@@ -105,8 +85,13 @@ namespace crypto {
         if (!privateKey_.Validate(randomGenerator_, 2))
             throw std::runtime_error("RSA private key validation failed");
 
-        initCryptors();
         privateKeyInitialized_ = true;
+        initCryptors();
+    }
+
+    void RSASimpleCrypto::setKeys(const byte_vector &encryptKey, const byte_vector &decryptKey) {
+        setEncryptionKey(encryptKey);
+        setDecryptionKey(decryptKey);
     }
 
     byte_vector RSASimpleCrypto::getEncryptionKey() const {
@@ -136,19 +121,36 @@ namespace crypto {
     }
 
     void RSASimpleCrypto::initCryptors() {
-        RSAES_OAEP_SHA_Encryptor encryptor(publicKey_);
-        encryptor_ = encryptor;
-        maxPlainTextLength_ = encryptor_.FixedMaxPlaintextLength();
+        if (publicKeyInitialized_) {
+#if defined(CRYPTO_ALGORITHM_RSAES_PKCS1)
+            RSAES_PKCS1v15_Encryptor encryptor(publicKey_);
+#elif defined(CRYPTO_ALGORITHM_RSAES_OAEP_SHA1)
+            RSAES_OAEP_SHA_Encryptor encryptor(publicKey_);
+#elif defined(CRYPTO_ALGORITHM_RSAES_OAEP_SHA256)
+            RSAES<OAEP<SHA256>>::Encryptor encryptor(publicKey_);
+#endif
+            encryptor_ = encryptor;
+            maxPlainTextLength_ = encryptor_.FixedMaxPlaintextLength();
+        }
 
-        RSAES_OAEP_SHA_Decryptor decryptor(privateKey_);
-        decryptor_ = decryptor;
-        fixedCipherTextLength_ = decryptor_.FixedCiphertextLength();
+        if (privateKeyInitialized_) {
+#if defined(CRYPTO_ALGORITHM_RSAES_PKCS1)
+            RSAES_PKCS1v15_Decryptor decryptor(privateKey_);
+#elif defined(CRYPTO_ALGORITHM_RSAES_OAEP_SHA1)
+            RSAES_OAEP_SHA_Decryptor decryptor(privateKey_);
+#elif defined(CRYPTO_ALGORITHM_RSAES_OAEP_SHA256)
+            RSAES<OAEP<SHA256>>::Decryptor decryptor(privateKey_);
+#endif
+            decryptor_ = decryptor;
+            fixedCipherTextLength_ = decryptor_.FixedCiphertextLength();
+        }
     }
 
     inline void RSASimpleCrypto::testIfPublicKeyInitialized() const {
         if (!publicKeyInitialized_)
             throw std::runtime_error("Encryption key is not initialized for RSASimpleCrypto object.");
     }
+
     inline void RSASimpleCrypto::testIfPrivateKeyInitialized() const {
         if (!privateKeyInitialized_)
             throw std::runtime_error("Decryption key is not initialized for RSASimpleCrypto object.");
@@ -166,18 +168,18 @@ namespace crypto {
     byte_vector RSAServerCrypto::loadKeyFromFile(const std::string &keyFilename) {
         std::string keyStr;
         FileSource file(keyFilename.c_str(), true,
-            new StringSink(keyStr));
+                        new StringSink(keyStr));
 
         return byte_vector(keyStr.begin(), keyStr.end());
     }
 
-    RSAServerCrypto::RSAServerCrypto(const std::string &publicKeyFilename, const std::string &privateKeyFilename) : 
-        rsaCrypto_(loadKeyFromFile(publicKeyFilename), loadKeyFromFile(privateKeyFilename)) 
-    {}
+    RSAServerCrypto::RSAServerCrypto(const std::string &publicKeyFilename, const std::string &privateKeyFilename) :
+            rsaCrypto_(loadKeyFromFile(publicKeyFilename), loadKeyFromFile(privateKeyFilename)) {}
 
     byte_vector RSAServerCrypto::encrypt(const byte_vector &text) {
         return rsaCrypto_.encrypt(text);
     }
+
     byte_vector RSAServerCrypto::decrypt(const byte_vector &cipher) {
         return rsaCrypto_.decrypt(cipher);
     }
@@ -185,6 +187,7 @@ namespace crypto {
     byte_vector RSAServerCrypto::getPublicKey() const {
         return rsaCrypto_.getEncryptionKey();
     }
+
     byte_vector RSAServerCrypto::getPrivateKey() const {
         return rsaCrypto_.getDecryptionKey();
     }
@@ -225,8 +228,8 @@ namespace crypto {
         }
     }*/
 
-    const char* RSAServerCrypto::DEFAULT_PUBLIC_KEY_FILENAME = "rsa-public.key";
-    const char* RSAServerCrypto::DEFAULT_PRIVATE_KEY_FILENAME = "rsa-private.key";
+    const char *RSAServerCrypto::DEFAULT_PUBLIC_KEY_FILENAME = "rsa-public.key";
+    const char *RSAServerCrypto::DEFAULT_PRIVATE_KEY_FILENAME = "rsa-private.key";
 
     size_t RSAServerCrypto::getMaxPlainTextLength_() const {
         return rsaCrypto_.getMaxPlainTextLength_();
@@ -248,8 +251,8 @@ namespace crypto {
     AESCrypto::AESCrypto() {
         // Generate a random key
         // Default key length is 16B (128b)
-        key_.Assign((byte*)NULL, AES::DEFAULT_KEYLENGTH);
-        randomGenerator_.GenerateBlock( key_, key_.size() );
+        key_.Assign((byte *) NULL, AES::DEFAULT_KEYLENGTH);
+        randomGenerator_.GenerateBlock(key_, key_.size());
 
         // Generate a random IV (Initialization vector)
         // Block size for AES is always 16B
@@ -262,12 +265,13 @@ namespace crypto {
     AESCrypto::AESCrypto(const byte_vector &symmetricKey) {
         if (symmetricKey.size() != AES::DEFAULT_KEYLENGTH) {
             std::ostringstream errorMsg;
-            errorMsg << "Given symmetric key for AES doesn't max the required length, which is: " << AES::DEFAULT_KEYLENGTH;
+            errorMsg << "Given symmetric key for AES doesn't max the required length, which is: "
+                     << AES::DEFAULT_KEYLENGTH;
 
             throw std::length_error(errorMsg.str());
         }
 
-        key_.Assign((const byte*) symmetricKey.data(), symmetricKey.size());
+        key_.Assign((const byte *) symmetricKey.data(), symmetricKey.size());
 
         initCryptors();
     }
@@ -278,11 +282,11 @@ namespace crypto {
         //NOTE: The StreamTransformationFilter adds padding
         //  as required. ECB and CBC Mode must be padded
         //  to the block size of the cipher.
-        StringSource ess( 
-            text.data(), text.size(), true,
-            new StreamTransformationFilter(encryptor_,
-                new StringSink(cipher)
-            )
+        StringSource ess(
+                text.data(), text.size(), true,
+                new StreamTransformationFilter(encryptor_,
+                                               new StringSink(cipher)
+                )
         );
 
         return byte_vector(cipher.begin(), cipher.end());
@@ -293,11 +297,11 @@ namespace crypto {
 
         // The StreamTransformationFilter removes
         //  padding as required.
-        StringSource dss( 
-            cipher.data(), cipher.size(), true,
-            new StreamTransformationFilter(decryptor_,
-                new StringSink(recovered)
-            )
+        StringSource dss(
+                cipher.data(), cipher.size(), true,
+                new StreamTransformationFilter(decryptor_,
+                                               new StringSink(recovered)
+                )
         );
 
         return byte_vector(recovered.begin(), recovered.end());
@@ -306,12 +310,13 @@ namespace crypto {
     void AESCrypto::setSymmetricKey(const byte_vector &symmetricKey) {
         if (symmetricKey.size() != AES::DEFAULT_KEYLENGTH) {
             std::ostringstream errorMsg;
-            errorMsg << "Given symmetric key for AES doesn't max the required length, which is: " << AES::DEFAULT_KEYLENGTH;
+            errorMsg << "Given symmetric key for AES doesn't max the required length, which is: "
+                     << AES::DEFAULT_KEYLENGTH;
 
             throw std::length_error(errorMsg.str());
         }
 
-        key_.Assign((const byte*) symmetricKey.data(), symmetricKey.size());
+        key_.Assign((const byte *) symmetricKey.data(), symmetricKey.size());
 
         initCryptors();
     }
@@ -323,7 +328,7 @@ namespace crypto {
     }*/
 
     byte_vector AESCrypto::getSymmetricKey() const {
-        return byte_vector((unsigned char*)key_.data(), (unsigned char*)key_.data() + key_.SizeInBytes());
+        return byte_vector((unsigned char *) key_.data(), (unsigned char *) key_.data() + key_.SizeInBytes());
     }
 
     void AESCrypto::initCryptors() {
