@@ -1,6 +1,8 @@
 #include "Packet.h"
 #include "buffer/Converter.h"
 
+using namespace buffer;
+
 namespace packet {
 
     Packet::Packet(PacketType::header type) : type(type) {}

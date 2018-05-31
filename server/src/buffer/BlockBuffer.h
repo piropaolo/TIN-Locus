@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include "Converter.h"
 
-namespace packet {
+namespace buffer {
     class BlockBuffer {
     public:
         BlockBuffer() = default;

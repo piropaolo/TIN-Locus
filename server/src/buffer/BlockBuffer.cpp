@@ -1,7 +1,7 @@
 #include "BlockBuffer.h"
 
 
-namespace packet {
+namespace buffer {
 
     const size_t BlockBuffer::size() const {
         return blockBuffer.size();

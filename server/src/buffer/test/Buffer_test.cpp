@@ -3,7 +3,7 @@
 
 #include "buffer/Converter.h"
 
-using namespace packet;
+using namespace buffer;
 
 TEST(BlockBuffer_getSize, Empty) {
     BlockBuffer buffer;

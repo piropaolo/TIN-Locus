@@ -1,7 +1,7 @@
 #include "gtest/gtest.h"
 #include "buffer/Converter.h"
 
-using namespace packet;
+using namespace buffer;
 
 TEST(Converter_toBytes, ConvertFromUInt8) {
     uint8_t test = 10;

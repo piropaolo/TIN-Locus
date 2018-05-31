@@ -8,6 +8,7 @@
 
 using namespace Log;
 using namespace packet;
+using namespace buffer;
 using namespace message;
 
 ClientBuffer::ClientBuffer(const int &port) {
