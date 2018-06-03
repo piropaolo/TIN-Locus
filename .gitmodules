@@ -4,3 +4,6 @@
 [submodule "server/lib/cryptopp"]
 	path = server/lib/cryptopp
 	url = https://github.com/weidai11/cryptopp
+[submodule "server/lib/cereal"]
+	path = server/lib/cereal
+	url = https://github.com/USCiLab/cereal.git
