@@ -81,6 +81,8 @@ void ProtocolClient::receiveData() {
             break;
         case Stage::Else:
             elsePacket();
+        case Stage::TestKey:
+            testKey();
         case Stage::Exit:
             break;
     }
@@ -88,7 +90,7 @@ void ProtocolClient::receiveData() {
 
 void ProtocolClient::setPublicKey() {
     try {
-//        cryptoModule.use(CryptoModule::Algorithm::ServerRSA);
+        cryptoModule.use(CryptoModule::Algorithm::ServerRSA);
         Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                          ": Set ServerRSA encryption");
         auto packet = recvPacket();
@@ -101,7 +103,7 @@ void ProtocolClient::setPublicKey() {
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                              ": Set new public key");
 
-//            cryptoModule.use(CryptoModule::Algorithm::OuterRSA);
+            cryptoModule.use(CryptoModule::Algorithm::OuterRSA);
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                              ": Set OuterRSA encryption");
 
@@ -130,7 +132,7 @@ void ProtocolClient::setPublicKey() {
 
 void ProtocolClient::setSymmetricKey() {
     try {
-//        cryptoModule.use(CryptoModule::Algorithm::ServerRSA);
+        cryptoModule.use(CryptoModule::Algorithm::ServerRSA);
         Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                          ": Set ServerRSA encryption");
         auto packet = recvPacket();
@@ -146,29 +148,60 @@ void ProtocolClient::setSymmetricKey() {
                 Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
                                                ": Closing connection");
                 closeConnection();
+            } else {
+                Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                                 ": returning symmetric key is correct");
+
+                //set AES encryption
+                cryptoModule.use(CryptoModule::Algorithm::AES);
+                Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                                 ": Set symmetric encryption");
+
+
+                Packet newPacket(PacketType::TEST_KEY);
+                newPacket.getBuffer().push_back(cryptoModule.getSymmetricKey());
+                sendPacket(newPacket);
+                Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                                 ": Send test key for symmetric key");
+
+                stage = Stage::TestKey;
             }
+        } else {
+            Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                           ": Get wrong packet in SetSymmetricKey stage: " +
+                                           PacketType::toString(packet.getType()));
+        }
+    } catch (std::exception &e) {
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Error in SetPublicKey stage: " + e.what());
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Closing connection");
+        closeConnection();
+    }
+}
+
+void ProtocolClient::testKey() {
+    try {
+        cryptoModule.use(CryptoModule::Algorithm::AES);
+        Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                         ": Set AES encryption");
+        auto packet = recvPacket();
+
+        if (packet.getType() == packet::PacketType::TEST_KEY) {
+            Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
+
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                             ": returning symmetric key is correct");
+                                             ": Test key for symmetric key was correct");
 
-            //set AES encryption
-//            cryptoModule.use(CryptoModule::Algorithm::AES);
-            Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                             ": Set symmetric encryption");
-
-
-
-            Packet newPacket(PacketType::LOCATION);
-            newPacket.getBuffer().push_back(cryptoModule.getSymmetricKey());
+            Packet newPacket(PacketType::CLOSE);
             sendPacket(newPacket);
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                             ": Send symmetric key");
-
-
+                                             ": Send close");
 
             stage = Stage::Else;
         } else {
             Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                           ": Get wrong packet in SetSymmetricKey stage: " +
+                                           ": Get wrong packet in TestKey stage: " +
                                            PacketType::toString(packet.getType()));
         }
     } catch (std::exception &e) {
@@ -201,9 +234,11 @@ void ProtocolClient::elsePacket() {
             case PacketType::MY_LOCATION:
                 break;
 
-            default:
-                Logger::getInstance().logError("ProtocolClient: Get wrong packet in Else stage: " +
+            default: {
+                Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                               ": Get wrong packet in Else stage: " +
                                                PacketType::toString(packet.getType()));
+            }
         }
     } catch (std::exception &e) {
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +

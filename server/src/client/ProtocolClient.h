@@ -10,6 +10,7 @@ class ProtocolClient : public DecoratorClient {
     enum class Stage : int {
         SetPublicKey,
         SetSymmetricKey,
+        TestKey,
         Else,
         Exit
     };
@@ -39,6 +40,8 @@ private:
     void elsePacket();
 
     void setName(packet::Packet &packet);
+
+    void testKey();
 };
 
 
