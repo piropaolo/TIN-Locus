@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include <string>
 #include "server/Receiver.h"
 #include "server/Sender.h"
 #include "server/Server.h"
@@ -34,8 +35,25 @@ int main() {
         receiver.getBlockingQueue().push(std::move(msg));
     }
 
+    while (std::cin.peek()) {
+        std::string commend;
+        std::cin >> commend;
+        if(commend == "closeAll") {
+            break;
+        } else if(commend == "close") {
+            int nr = 0;
+            std::cin >> nr;
+            {
+                Message msg(Message::EraseClient);
+                msg.fileDescriptor = std::make_unique<int>(nr);
+                clientManager.getBlockingQueue().priorityPush(std::move(msg));
+            }
+        } else {
+            std::cout << "Commend not recognised: " << commend << std::endl;
+        }
+    }
 
-    std::cin.get();
+
     {
         Message msg = Message(Message::Close);
         sender.getBlockingQueue().push(std::move(msg));
