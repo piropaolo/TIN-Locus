@@ -14,7 +14,12 @@ public class Client {
     private BlockingQueue<Message> sendInstructions;
     private Thread readerThread;
     private Thread writerThread;
+    private Thread mainThread;
     private boolean running;
+    private Boolean sending;
+    private Boolean receiveNext;
+    private final Object sendingLock;
+    private final Object receivingLock;
 
     public Client() throws IOException {
         layerManager = new LayerManager();
@@ -22,7 +27,11 @@ public class Client {
         sendInstructions = new LinkedBlockingQueue<>();
         readerThread = new Thread(new ReaderThread());
         writerThread = new Thread(new WriterThread());
+        mainThread = Thread.currentThread();
         running = true;
+        receiveNext = true;
+        sendingLock = new Object();
+        receivingLock = new Object();
         this.start();
     }
 
@@ -32,10 +41,9 @@ public class Client {
         Message message;
         while (running) {
             try {
-//                sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
                 message = childMessages.take();
                 if (message.getType() == Message.MessageType.PACKET) {
-                    switch(message.getPacket().getType()) {
+                    switch (message.getPacket().getType()) {
                         case _OPEN:
                         case _OPEN_PROT:
                         case _ALIVE:
@@ -50,8 +58,14 @@ public class Client {
                             Packet packet6 = new Packet(PacketType._PUBLIC_KEY);
                             packet6.setArg1(CipherModule.getKeyPair().getPublic().getEncoded());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet6));
+                            sending = true;
                             System.out.println("Ordered to send public key");
-                            CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
+                            synchronized (sendingLock) {
+                                while (sending) {
+                                    wait();
+                                }
+                                CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
+                            }
                             break;
                         case _CLOSE:
                             stop();
@@ -59,18 +73,20 @@ public class Client {
                         case _SYMMETRIC_KEY:
                             CipherModule.setSessionKey((byte[]) message.getPacket().getArg1());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, message.getPacket()));
-//                            message = childMessages.take();
-                            Thread.sleep(400);
-                            CipherModule.setState(CipherModule.State.SESSION);
-                            CipherModule.initializeSessionCiphers();
-                            System.out.println("Some random println");
-//                            if(message.getType() != Message.MessageType.PACKET && message.getPacket().getType() != PacketType._ACK_OK)
-//                                stop();
+                            sending = true;
+                            synchronized (sendingLock) {
+                                while (sending) {
+                                    sendingLock.wait();
+                                }
+                                CipherModule.setState(CipherModule.State.SESSION);
+                                CipherModule.initializeSessionCiphers();
+                            }
                             break;
                         case _TEST_KEY:
 //                            do something with challenge;
                             Packet packet = new Packet(PacketType._TEST_KEY);
 //                            packet.setArg1(challenge after doing soething with it);
+                            packet.setArg1(message.getPacket().getArg1());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet));
                             break;
                         case _SET_NAME:
@@ -110,7 +126,7 @@ public class Client {
                         case _MY_LOCATION:
 //                            gui gives us location
                             Packet packet5 = new Packet(PacketType._REMOVE_FOLLOWED);
-//                            action initialized by giu so we have name from there
+//                            action initialized by giu so we have id from there
 //                            packet2.setArg1(latitude from gui);
 //                            packet2.setArg2(longitude from gui);
 //                            packet2.setArg3(delta time from gui);
@@ -120,11 +136,15 @@ public class Client {
                 } else
                     stop();
                 Thread.sleep(100);
+                synchronized(receivingLock) {
+                    receiveNext = true;
+                    receivingLock.notify();
+                }
             } catch (InterruptedException | IOException e) {
                 stop();
-                e.printStackTrace();
+//                e.printStackTrace();
             } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
-                e.printStackTrace();
+//                e.printStackTrace();
                 stop();
             }
         }
@@ -139,7 +159,7 @@ public class Client {
             layerManager.closeSocket();
             System.out.println("Socket closed");
         } catch (IOException e) {
-            e.printStackTrace();
+//            e.printStackTrace();
         }
     }
 
@@ -150,25 +170,30 @@ public class Client {
             Packet packet;
             while (running) {
                 try {
-//                    byte[] bytes = new byte[5];
-//                    layerManager.receive();
+                    synchronized(receivingLock) {
+                        while(!receiveNext)
+                            receivingLock.wait();
+                    }
                     packet = layerManager.receive();
-//                    packet = new Packet(PacketType._OPEN);
-//                    packet.setArg1(Converter.byteToString(bytes));
                     Message message = new Message(Message.MessageType.PACKET, packet);
                     childMessages.put(message);
+                    receiveNext = false;
                     Thread.sleep(1000);
                 } catch (IOException | InterruptedException e1) {
 //                    e1.printStackTrace();
                     try {
                         childMessages.put(new Message(Message.MessageType.ERROR, null));
+                        mainThread.interrupt();
+                        Thread.currentThread().interrupt();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
                     }
                 } catch (Exception e) {
 //                    e.printStackTrace();
                     try {
                         childMessages.put(new Message(Message.MessageType.ERROR, null));
+                        mainThread.interrupt();
+                        Thread.currentThread().interrupt();
                     } catch (InterruptedException e1) {
 //                        e1.printStackTrace();
                     }
@@ -186,17 +211,23 @@ public class Client {
             while (running) {
                 try {
                     message = sendInstructions.take();
-                    if (message.getType() == Message.MessageType.PACKET) {
-                        packet = message.getPacket();
-                        layerManager.send(packet);
+                    synchronized (sendingLock) {
+                        if (message.getType() == Message.MessageType.PACKET) {
+                            packet = message.getPacket();
+                            layerManager.send(packet);
+                        }
+                        sending = false;
+                        sendingLock.notify();
                     }
                     Thread.sleep(100);
                 } catch (IOException | InterruptedException e1) {
-                    e1.printStackTrace();
+//                    e1.printStackTrace();
                     try {
                         childMessages.put(new Message(Message.MessageType.ERROR, null));
+                        mainThread.interrupt();
+                        Thread.currentThread().interrupt();
                     } catch (InterruptedException e) {
-                        e.printStackTrace();
+//                        e.printStackTrace();
                     }
                 }
             }

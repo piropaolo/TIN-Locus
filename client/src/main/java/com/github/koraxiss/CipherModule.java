@@ -146,8 +146,8 @@ public class CipherModule {
             case SERVER_PUBLIC:
                 return encryptServerPublic.doFinal(buffer, offset, n);
             case CLIENT_PRIVATE_SERVER_PUBLIC:
-                byte[] temp = encryptClientPrivate.doFinal(buffer, offset, n);
-                return encryptServerPublic.doFinal(temp);
+//                byte[] temp = encryptClientPrivate.doFinal(buffer, offset, n);
+                return encryptServerPublic.doFinal(buffer, offset, n);
             case SESSION:
                 return encryptSession.doFinal(buffer, offset, n);
             default:

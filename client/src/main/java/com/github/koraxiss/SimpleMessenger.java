@@ -19,25 +19,26 @@ public class SimpleMessenger implements Messenger {
     }
 
     public void send(byte[] buffer, int n) throws IOException {
-        byte[] message = new byte[buffer.length + 2];
-        short size = (short) (buffer.length);
+        byte[] message = new byte[n + 2];
+        short size = (short) n;
         byte[] sizeByte = Converter.shortToByte(size);
         message[0] = sizeByte[0];
         message[1] = sizeByte[1];
         System.out.println("Sent message length: " + message.length);
-        System.arraycopy(buffer, 0, message, 2, buffer.length);
+        System.arraycopy(buffer, 0, message, 2, n);
         output.write(message, 0, message.length);
     }
 
     public int receive(byte[] buffer, int n) throws IOException {
-        input.read(buffer, 0, 2);
+        int j = input.read(buffer, 0, 2);
+        if(j < 0)
+            throw new IOException("Failed to read");
         byte[] size = new byte[2];
         size[0] = buffer[0];
         size[1] = buffer[1];
         short s = Converter.byteToShort(size);
         System.out.println("Bytes to receive: " + s);
         int i = input.read(buffer, 0, s);
-        System.out.println((int) buffer[0]);
         return i;
     }
 

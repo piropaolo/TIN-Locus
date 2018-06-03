@@ -13,44 +13,58 @@ public class EncryptedMessenger implements Messenger {
     }
 
     public void send(byte[] buffer, int n) throws IOException {
-//        try {
-//            if (CipherModule.getState() != CipherModule.State.SESSION) {
-//                int bytesLeft = n;
-//                int counter = 0;
-//                while (bytesLeft > 0) {
-//                    int numberToEncrypt = bytesLeft > 53 ? 53 : bytesLeft;
-//                    CipherModule.encrypt(buffer, counter * 53, numberToEncrypt);
-//                    bytesLeft -= numberToEncrypt;
-//                    ++counter;
-//                }
-//            } else {
-//            if(CipherModule.getState() == CipherModule.State.SESSION)
-//                System.arraycopy(CipherModule.encrypt(buffer, 0, n), 0, buffer, 0, n);
-//            }
-//        } catch (BadPaddingException | IllegalBlockSizeException e) {
-//            e.printStackTrace();
-//        }
-        simpleMessenger.send(buffer, n);
+        byte[] message = new byte[1024];
+        int bytesToSend = 0;
+        try {
+            if (CipherModule.getState() != CipherModule.State.SESSION) {
+                int bytesLeft = n;
+                int counter = 0;
+                byte[] temp;
+                while (bytesLeft > 0) {
+                    int numberToEncrypt = bytesLeft > 53 ? 53 : bytesLeft;
+                    temp = CipherModule.encrypt(buffer, counter * 53, numberToEncrypt);
+                    System.arraycopy(temp, 0, message, counter * 128, temp.length);
+                    bytesLeft -= numberToEncrypt;
+                    ++counter;
+                    bytesToSend = counter * 128;
+                }
+            } else {
+                byte[] temp = CipherModule.encrypt(buffer, 0, n);
+                System.arraycopy(temp, 0, message, 0, temp.length);
+                bytesToSend = temp.length;
+            }
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
+//        String cipher = Base64.getEncoder().encodeToString(buffer);
+        simpleMessenger.send(message, bytesToSend);
     }
 
     public int receive(byte[] buffer, int n) throws IOException {
         int i = simpleMessenger.receive(buffer, n);
-//        try {
-//            if (CipherModule.getState() != CipherModule.State.SESSION) {
-//                int bytesLeft = n;
-//                int counter = 0;
+        byte[] message = new byte[1024];
+        try {
+            if (CipherModule.getState() != CipherModule.State.SESSION) {
+                int bytesLeft = i;
+                int counter = 0;
+                byte[] temp;
 //                while (bytesLeft > 0) {
 //                    int numberToDecrypt = bytesLeft > 22 ? 22 : bytesLeft;
-//                    CipherModule.decrypt(buffer, counter * 22, numberToDecrypt);
+                    temp = CipherModule.decrypt(buffer, counter * 22, bytesLeft);
+                    System.arraycopy(temp, 0, message, counter * 22, temp.length);
+                    i = temp.length;
 //                    bytesLeft -= numberToDecrypt;
 //                    ++counter;
 //                }
-//            } else
-//            if(CipherModule.getState() == CipherModule.State.SESSION)
-//                System.arraycopy(CipherModule.decrypt(buffer, 0, n), 0, buffer, 0, n);
-//        } catch (BadPaddingException | IllegalBlockSizeException e) {
-//            e.printStackTrace();
-//        }
+            } else {
+                byte[] temp = CipherModule.decrypt(buffer, 0, i);
+                System.arraycopy(temp, 0, message, 0, temp.length);
+                i = temp.length;
+            }
+        } catch (BadPaddingException | IllegalBlockSizeException e) {
+            e.printStackTrace();
+        }
+        System.arraycopy(message, 0, buffer,0, i);
         return i;
     }
 
@@ -80,7 +94,7 @@ public class EncryptedMessenger implements Messenger {
                 byte[] test = new byte[i - 1];
                 System.arraycopy(buffer, 1, test, 0, i - 1);
                 Packet packet1 = new Packet(PacketType._TEST_KEY);
-                packet1.setArg1(Converter.byteToString(test));
+                packet1.setArg1(test);
                 return packet1;
             default:
                 Packet otherPacket = new Packet(PacketType._OTHER);

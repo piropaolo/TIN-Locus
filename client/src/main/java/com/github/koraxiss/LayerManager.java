@@ -9,7 +9,7 @@ public class LayerManager {
     private boolean isEncryptionOn;
 
     public LayerManager() throws IOException {
-        simpleMessenger = new SimpleMessenger("25.38.119.125", 5050);
+        simpleMessenger = new SimpleMessenger("25.46.207.96", 5050);
         encryptedMessenger = new EncryptedMessenger(simpleMessenger);
         protocolMessenger = new ProtocolMessenger(encryptedMessenger);
         isEncryptionOn = false;
