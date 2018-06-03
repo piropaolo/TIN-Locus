@@ -4,14 +4,18 @@ project(Locus)
 find_package(Threads)
 
 set(CMAKE_CXX_STANDARD 14)
+
+find_package(GTest)
 enable_testing()
 
-add_subdirectory(lib)
+add_subdirectory(lib/googletest)
+include_directories(lib)
+include_directories(lib/cereal/include)
 
 include_directories(src)
-include_directories(lib)
 
 add_subdirectory(src/simple-client)
+add_subdirectory(src/basedata)
 add_subdirectory(src/buffer)
 add_subdirectory(src/client)
 add_subdirectory(src/crypto)
