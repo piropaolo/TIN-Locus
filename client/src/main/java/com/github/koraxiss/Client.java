@@ -46,6 +46,7 @@ public class Client {
                     switch (message.getPacket().getType()) {
                         case _OPEN:
                         case _OPEN_PROT:
+                            break;
                         case _ALIVE:
                             sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
                             break;
@@ -83,53 +84,38 @@ public class Client {
                             }
                             break;
                         case _TEST_KEY:
-//                            do something with challenge;
                             Packet packet = new Packet(PacketType._TEST_KEY);
-//                            packet.setArg1(challenge after doing soething with it);
                             packet.setArg1(message.getPacket().getArg1());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet));
                             break;
                         case _SET_NAME:
-//                            get name from gui
                             Packet packet1 = new Packet(PacketType._SET_NAME);
-//                            packet.setArg1(name that we got from gui);
+//                            packet1.setArg1(androidApp.getUsername());
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet1));
                             break;
                         case _ADD_FOLLOWER:
-//                          get who we want to follow from gui
-                            Packet packet4 = new Packet(PacketType._ADD_FOLLOWER);
-//                            action initialized by giu so we have name from there
-//                            packet2.setArg1(name from gui);
+                            Packet packet4 = message.getPacket();
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet4));
                             break;
                         case _NEW_FOLLOWED:
-//                            tell gui to display information about new followed user
+//                            androidAppQueue.put(message);
                         case _REMOVE_FOLLOWED:
-                            Packet packet3 = new Packet(PacketType._REMOVE_FOLLOWED);
-//                            action initialized by giu so we have name from there
-//                            packet2.setArg1(name from gui);
+                            Packet packet3 = message.getPacket();
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet3));
                             break;
                         case _REMOVE_FOLLOWER:
-                            Packet packet2 = new Packet(PacketType._REMOVE_FOLLOWER);
-//                            action initialized by giu so we have name from there
-//                            packet2.setArg1(name from gui);
+                            Packet packet2 = message.getPacket();
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet2));
                             break;
                         case _LOCATION:
-//                            tell gui to update position of client of given id
+//                            androidAppQueue.put(message);
                             break;
                         case _ACK_ERR:
                             break;
                         case _ACK_OK:
                             break;
                         case _MY_LOCATION:
-//                            gui gives us location
-                            Packet packet5 = new Packet(PacketType._REMOVE_FOLLOWED);
-//                            action initialized by giu so we have id from there
-//                            packet2.setArg1(latitude from gui);
-//                            packet2.setArg2(longitude from gui);
-//                            packet2.setArg3(delta time from gui);
+                            Packet packet5 = message.getPacket();
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet5));
                             break;
                     }
@@ -140,12 +126,9 @@ public class Client {
                     receiveNext = true;
                     receivingLock.notify();
                 }
-            } catch (InterruptedException | IOException e) {
+            } catch (InterruptedException | IOException | NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
                 stop();
 //                e.printStackTrace();
-            } catch (NoSuchPaddingException | NoSuchAlgorithmException | InvalidKeySpecException | InvalidKeyException e) {
-//                e.printStackTrace();
-                stop();
             }
         }
     }
@@ -179,15 +162,6 @@ public class Client {
                     childMessages.put(message);
                     receiveNext = false;
                     Thread.sleep(1000);
-                } catch (IOException | InterruptedException e1) {
-//                    e1.printStackTrace();
-                    try {
-                        childMessages.put(new Message(Message.MessageType.ERROR, null));
-                        mainThread.interrupt();
-                        Thread.currentThread().interrupt();
-                    } catch (InterruptedException e) {
-//                        e.printStackTrace();
-                    }
                 } catch (Exception e) {
 //                    e.printStackTrace();
                     try {
