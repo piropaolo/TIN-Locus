@@ -8,7 +8,7 @@ using namespace std::chrono_literals;
 EncryptClient::EncryptClient(std::unique_ptr<Client> &&client)
         : DecoratorClient(std::move(client)) {
 
-    Logger::getInstance().logMessage("EncryptClient " + std::to_string(getConnectionFD()) + ": Created");
+    Logger::getInstance().logDebug("EncryptClient " + std::to_string(getConnectionFD()) + ": Created");
 }
 
 void EncryptClient::recv() {

@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 
 EPollManager::EPollManager(const std::string &name)
         : name(name), events(static_cast<unsigned long>(maxSizeEvents)) {
-    Logger::getInstance().logMessage(name + ": Initialize");
+    Logger::getInstance().logDebug(name + ": Initialize");
     ePollFD = epoll_create1(0);
     if (ePollFD < 0) {
         throw std::runtime_error(name + ": Error while creating epoll: " + std::string(std::strerror(errno)));

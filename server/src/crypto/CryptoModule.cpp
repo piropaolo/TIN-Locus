@@ -9,7 +9,7 @@ namespace crypto {
         outerRSAKey = true;
     }
 
-    const byte_vector &CryptoModule::getOuterRSAKey() const {
+    const byte_vector CryptoModule::getOuterRSAKey() const {
         return rsaSimpleCrypto.getEncryptionKey();
     }
 

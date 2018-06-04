@@ -2,9 +2,9 @@
 #define LOCUS_CLIENTINFO_H
 
 #include <cereal/types/unordered_map.hpp>
-#include <cereal/types/vector.hpp>
 #include <cereal/types/list.hpp>
 #include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
 #include <ctime>
 
 #include "Position.h"
@@ -36,6 +36,8 @@ struct ClientInfo {
 
     void addWatcher(const short &id);
     void eraseWatcher(const short &id);
+
+    std::vector<unsigned char> getPublicKey() const;
 
     bool operator==(const ClientInfo &rhs) const;
     bool operator!=(const ClientInfo &rhs) const;

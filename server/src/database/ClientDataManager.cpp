@@ -7,7 +7,7 @@ using namespace buffer;
 using namespace message;
 
 short ClientDataManager::addClient(const std::vector<unsigned char> &publicKey) {
-    clientId.insert({toString(publicKey), nextId});
+    clientId.insert({publicKey, nextId});
     clientInfo.insert({nextId, ClientInfo(publicKey)});
     return nextId++;
 }
@@ -16,7 +16,7 @@ short ClientDataManager::registerClient(const std::vector<unsigned char> &public
                                         message::BlockingQueue<message::Message> *blockingQueue) {
     short id = 0;
 
-    auto clientIdIt = clientId.find(toString(publicKey));
+    auto clientIdIt = clientId.find(publicKey);
     if (clientIdIt != clientId.end()) {
         id = clientIdIt->second;
     } else {

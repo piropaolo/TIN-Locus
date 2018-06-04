@@ -1,4 +1,7 @@
 #include "ClientInfo.h"
+#include "buffer/Converter.h"
+
+using namespace buffer;
 
 ClientInfo::ClientInfo(const std::vector<unsigned char> &publicKey)
         : publicKey(publicKey) {
@@ -26,6 +29,10 @@ void ClientInfo::addWatcher(const short &id) {
 
 void ClientInfo::eraseWatcher(const short &id) {
     watchedGroup.remove_if([&id](Watcher &w) { return w.id == id; });
+}
+
+std::vector<unsigned char> ClientInfo::getPublicKey() const {
+    return publicKey;
 }
 
 bool ClientInfo::operator==(const ClientInfo &rhs) const {

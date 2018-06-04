@@ -2,8 +2,8 @@
 #define LOCUS_CLIENTPOSITIONMANAGER_H
 
 #include <cereal/types/string.hpp>
-#include <cereal/types/map.hpp>
 #include <cereal/types/vector.hpp>
+#include <cereal/types/map.hpp>
 #include <cereal/types/unordered_map.hpp>
 
 #include "ClientInfo.h"
@@ -38,7 +38,7 @@ public:
 
 protected:
     short nextId = 1;
-    std::unordered_map<std::string, short> clientId;
+    std::map<std::vector<unsigned char>, short> clientId;
     std::unordered_map<std::string, short> clientName;
     std::unordered_map<short, ClientInfo> clientInfo;
     std::unordered_map<short, message::BlockingQueue<message::Message> *> clientsQueue;

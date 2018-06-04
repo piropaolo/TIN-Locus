@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 #include <string>
+#include "log/Logger.h"
+#include "database/Database.h"
 #include "server/Receiver.h"
 #include "server/Sender.h"
 #include "server/Server.h"
@@ -12,6 +14,9 @@ using namespace message;
 const uint16_t PORT = 5050;
 
 int main() {
+//    Log::Logger::getInstance().setShouldShowDebug(false);
+    Database::getInstance();
+
     Server server;
     std::thread serverThread([&server] { server(); });
 
