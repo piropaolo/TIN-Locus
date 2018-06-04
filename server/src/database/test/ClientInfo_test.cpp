@@ -1,5 +1,5 @@
 #include "gtest/gtest.h"
-#include "../ClientInfo.h"
+#include "database/ClientData.h"
 
 #include <cereal/archives/json.hpp>
 #include <cereal/archives/binary.hpp>
@@ -14,7 +14,7 @@ using namespace std;
 using namespace cereal;
 using namespace buffer;
 
-void fill(ClientInfo &clientInfo) {
+void fill(ClientData &clientInfo) {
     clientInfo.setName("name");
 
     clientInfo.addPosition(0,0,0);
@@ -22,21 +22,21 @@ void fill(ClientInfo &clientInfo) {
     clientInfo.addPosition(0,0,2);
     clientInfo.addPosition(0,0,3);
 
-    clientInfo.addObserver(1);
-    clientInfo.addObserver(2);
+    clientInfo.addFollower(1);
+    clientInfo.addFollower(2);
 
-    clientInfo.addWatcher(1);
-    clientInfo.addWatcher(2);
+    clientInfo.startFollowing(1);
+    clientInfo.startFollowing(2);
 }
 
 TEST(ClientInfo_Constructor, Initialize) {
-    EXPECT_NO_THROW(ClientInfo());
-    EXPECT_NO_THROW(ClientInfo(std::vector<unsigned char>(4, 0)));
-    EXPECT_NO_THROW(ClientInfo(toByteVector("0000")));
+    EXPECT_NO_THROW(ClientData());
+    EXPECT_NO_THROW(ClientData(std::vector<unsigned char>(4, 0)));
+    EXPECT_NO_THROW(ClientData(toByteVector("0000")));
 }
 
 TEST(ClientInfo_Serialize, JSON) {
-    ClientInfo clientInfo(toByteVector("0000"));
+    ClientData clientInfo(toByteVector("0000"));
     fill(clientInfo);
 
     stringstream ss;
@@ -50,10 +50,10 @@ TEST(ClientInfo_Serialize, JSON) {
 
 TEST(ClientInfo_Deserialize, JSON) {
     stringstream ss;
-    ClientInfo oclientInfo(toByteVector("0000"));
+    ClientData oclientInfo(toByteVector("0000"));
     fill(oclientInfo);
 
-    ClientInfo iclientInfo;
+    ClientData iclientInfo;
     {
         JSONOutputArchive oarchive(ss);
         oarchive(oclientInfo);
@@ -66,7 +66,7 @@ TEST(ClientInfo_Deserialize, JSON) {
 }
 
 TEST(ClientInfo_Serialize, Binary) {
-    ClientInfo clientInfo(toByteVector("0000"));
+    ClientData clientInfo(toByteVector("0000"));
     fill(clientInfo);
 
     stringstream ss;
@@ -80,10 +80,10 @@ TEST(ClientInfo_Serialize, Binary) {
 
 TEST(ClientInfo_Deserialize, Binary) {
     stringstream ss;
-    ClientInfo oclientInfo(toByteVector("0000"));
+    ClientData oclientInfo(toByteVector("0000"));
     fill(oclientInfo);
 
-    ClientInfo iclientInfo;
+    ClientData iclientInfo;
     {
         BinaryOutputArchive oarchive(ss);
         oarchive(oclientInfo);
@@ -96,7 +96,7 @@ TEST(ClientInfo_Deserialize, Binary) {
 }
 
 TEST(ClientInfo_Serialize, PortableBinary) {
-    ClientInfo clientInfo(toByteVector("0000"));
+    ClientData clientInfo(toByteVector("0000"));
     fill(clientInfo);
 
     stringstream ss;
@@ -110,10 +110,10 @@ TEST(ClientInfo_Serialize, PortableBinary) {
 
 TEST(ClientInfo_Deserialize, PortableBinary) {
     stringstream ss;
-    ClientInfo oclientInfo(toByteVector("0000"));
+    ClientData oclientInfo(toByteVector("0000"));
     fill(oclientInfo);
 
-    ClientInfo iclientInfo;
+    ClientData iclientInfo;
     {
         PortableBinaryOutputArchive oarchive(ss);
         oarchive(oclientInfo);

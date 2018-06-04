@@ -17,10 +17,7 @@ ProtocolClient::ProtocolClient(std::unique_ptr<Client> &&client, crypto::CryptoM
         : DecoratorClient(std::move(client)), cryptoModule(cryptoModule) {
     Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) + ": Created");
 
-    {
-        Packet newPacket(PacketType::OPEN_ENCR);
-        sendPacket(newPacket);
-    }
+    sendPacket(Packet(PacketType::OPEN_ENCR));
 }
 
 ProtocolClient::~ProtocolClient() {
@@ -61,19 +58,6 @@ void ProtocolClient::recv() {
             Logger::getInstance().logMessage(
                     "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get EraseObserver message");
             update();
-            break;
-
-        case Message::EraseObserver:
-            if (msg.id) {
-                Logger::getInstance().logDebug(
-                        "ProtocolClient " + std::to_string(getConnectionFD()) +
-                        ": Get EraseObserver message without id");
-            } else {
-                Logger::getInstance().logMessage(
-                        "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get EraseObserver message");
-
-                eraseObserver(*msg.id);
-            }
             break;
 
         default:
@@ -163,7 +147,6 @@ void ProtocolClient::setSymmetricKey() {
         auto packet = recvPacket();
 
         if (packet.getType() == PacketType::SYMMETRIC_KEY) {
-            Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
 
             //check validation of test
             if (cryptoModule.getSymmetricKey() != packet.getBuffer().popAll()) {
@@ -172,12 +155,12 @@ void ProtocolClient::setSymmetricKey() {
                 closeConnection();
             } else {
                 Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                                 ": returning symmetric key is correct");
+                                                 ": Returning symmetric key is correct");
 
                 //set AES encryption
                 cryptoModule.use(CryptoModule::Algorithm::AES);
                 Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                                 ": Set symmetric encryption");
+                                                 ": Set AES encryption");
 
 
                 Packet newPacket(PacketType::TEST_KEY);
@@ -207,7 +190,6 @@ void ProtocolClient::testKey() {
         auto packet = recvPacket();
 
         if (packet.getType() == PacketType::TEST_KEY) {
-            Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
 
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                              ": Test key for symmetric key was correct");
@@ -239,7 +221,6 @@ void ProtocolClient::selfRegister() {
 void ProtocolClient::stableCommunication() {
     try {
         auto packet = recvPacket();
-        Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
 
         switch (packet.getType()) {
             case PacketType::CLOSE:
@@ -275,17 +256,20 @@ void ProtocolClient::stableCommunication() {
 }
 
 void ProtocolClient::setName(packet::Packet &packet) {
-    Database::getInstance().getClientDataManager().setName(id, toString(packet.getBuffer().popAll()));
+    auto res = Database::getInstance().getClientDataManager().setName(id, toString(packet.getBuffer().popAll()));
 
-    Packet newPacket(PacketType::ACK_OK);
-    sendPacket(newPacket);
+    if (res) {
+        sendPacket(Packet(PacketType::ACK_OK));
+    } else {
+        sendPacket(Packet(PacketType::ACK_ERR));
+    }
 }
 
 void ProtocolClient::addFollower(packet::Packet &packet) {
     auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
 
     if (followerId > 0) {
-        Database::getInstance().getClientDataManager().addObserver(id, followerId);
+        Database::getInstance().getClientDataManager().addFollower(id, followerId);
     }
 }
 
@@ -293,7 +277,7 @@ void ProtocolClient::removeFollower(packet::Packet &packet) {
     auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
 
     if (followerId > 0) {
-        Database::getInstance().getClientDataManager().eraseObserver(id, followerId);
+        Database::getInstance().getClientDataManager().removeFollower(id, followerId);
     }
 }
 
@@ -301,7 +285,7 @@ void ProtocolClient::removeFollowed(packet::Packet &packet) {
     auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
 
     if (followerId > 0) {
-        Database::getInstance().getClientDataManager().eraseWatcher(id, followerId);
+        Database::getInstance().getClientDataManager().stopFollowing(id, followerId);
     }
 }
 
@@ -348,10 +332,3 @@ void ProtocolClient::update() {
     }
     sendRemainingData();
 }
-
-void ProtocolClient::eraseObserver(short &id) {
-    Packet newPacket(PacketType::REMOVE_FOLLOWER);
-    newPacket.getBuffer().push_back(to_bytes(id));
-    sendPacket(newPacket);
-}
-
