@@ -62,7 +62,7 @@ public class Client {
                             System.out.println("Ordered to send public key");
                             synchronized (sendingLock) {
                                 while (sending) {
-                                    wait();
+                                    sendingLock.wait();
                                 }
                                 CipherModule.setState(CipherModule.State.CLIENT_PRIVATE_SERVER_PUBLIC);
                             }
