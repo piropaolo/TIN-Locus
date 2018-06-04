@@ -9,6 +9,10 @@ namespace crypto {
         outerRSAKey = true;
     }
 
+    const byte_vector CryptoModule::getOuterRSAKey() const {
+        return rsaSimpleCrypto.getEncryptionKey();
+    }
+
     byte_vector CryptoModule::encryptRSA(RSACrypto *rsaCrypto, const byte_vector &text) {
         byte_vector encryptBytes;
         for (int i = 0; i < text.size(); i += rsaCrypto->getMaxPlainTextLength_()) {
@@ -37,7 +41,7 @@ namespace crypto {
         return aesCrypto.getSymmetricKey();
     }
 
-    void CryptoModule::use(const Algorithm &algo) {
+    void CryptoModule::use(const CryptoModule::Algorithm &algo) {
         algorithm = algo;
     }
 
@@ -66,4 +70,5 @@ namespace crypto {
                 return aesCrypto.decrypt(cipher);
         }
     }
+
 }

@@ -104,7 +104,9 @@ namespace crypto {
         queue.CopyTo(keySS);
         keySS.MessageEnd();
 
-        return byte_vector(keyString.begin(), keyString.end());
+        auto vecPublicKey = byte_vector(keyString.begin(), keyString.end());
+
+        return vecPublicKey;
     }
 
     byte_vector RSASimpleCrypto::getDecryptionKey() const {

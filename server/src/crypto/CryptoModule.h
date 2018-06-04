@@ -18,6 +18,8 @@ namespace crypto {
         CryptoModule() = default;
 
         void setOuterRSAKey(const byte_vector &key);
+        const byte_vector getOuterRSAKey() const;
+
         byte_vector encryptRSA(RSACrypto *rsaCrypto, const byte_vector &text);
         byte_vector decryptRSA(RSACrypto *rsaCrypto, const byte_vector &cipher);
 

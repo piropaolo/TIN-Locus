@@ -1,21 +1,29 @@
 #include <stdexcept>
+#include <ctime>
 
 #include "ProtocolClient.h"
 #include "log/Logger.h"
+#include "database/Database.h"
+#include "buffer/Converter.h"
 
 using namespace Log;
 using namespace message;
 using namespace packet;
 using namespace crypto;
+using namespace buffer;
 using namespace std::chrono_literals;
 
 ProtocolClient::ProtocolClient(std::unique_ptr<Client> &&client, crypto::CryptoModule &cryptoModule)
         : DecoratorClient(std::move(client)), cryptoModule(cryptoModule) {
     Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) + ": Created");
 
-    {
-        Packet newPacket(PacketType::OPEN_ENCR);
-        sendPacket(newPacket);
+    sendPacket(Packet(PacketType::OPEN_ENCR));
+}
+
+ProtocolClient::~ProtocolClient() {
+    //uregister
+    if (id > 0) {
+        Database::getInstance().getClientDataManager().unregister(id);
     }
 }
 
@@ -35,15 +43,21 @@ void ProtocolClient::recv() {
             break;
 
         case Message::PacketSend:
-            Logger::getInstance().logMessage(
+            Logger::getInstance().logDebug(
                     "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get PacketSend message");
             sendRemainingData();
             break;
 
         case Message::PacketReceive:
-            Logger::getInstance().logMessage(
+            Logger::getInstance().logDebug(
                     "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get PacketReceive message");
             receiveData();
+            break;
+
+        case Message::Update:
+            Logger::getInstance().logMessage(
+                    "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get EraseObserver message");
+            update();
             break;
 
         default:
@@ -72,17 +86,16 @@ void ProtocolClient::sendRemainingData() {
 
 void ProtocolClient::receiveData() {
     switch (stage) {
-
         case Stage::SetPublicKey:
             setPublicKey();
             break;
         case Stage::SetSymmetricKey:
             setSymmetricKey();
             break;
-        case Stage::Else:
-            elsePacket();
         case Stage::TestKey:
             testKey();
+        case Stage::StableCommunication:
+            stableCommunication();
         case Stage::Exit:
             break;
     }
@@ -95,8 +108,7 @@ void ProtocolClient::setPublicKey() {
                                          ": Set ServerRSA encryption");
         auto packet = recvPacket();
 
-        if (packet.getType() == packet::PacketType::PUBLIC_KEY) {
-            Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
+        if (packet.getType() == PacketType::PUBLIC_KEY) {
 
             //set new key
             cryptoModule.setOuterRSAKey(packet.getBuffer().popAll());
@@ -111,21 +123,18 @@ void ProtocolClient::setPublicKey() {
             Packet newPacket(PacketType::SYMMETRIC_KEY);
             newPacket.getBuffer().push_back(cryptoModule.getSymmetricKey());
             sendPacket(newPacket);
-            Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                             ": Send symmetric key");
 
             stage = Stage::SetSymmetricKey;
         } else {
             Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                           ": Get wrong packet in SetPublicKey stage: " +
-                                           PacketType::toString(packet.getType()));
+                                           ": Get wrong packet in SetPublicKey stage. "
+                                           "Expected " + PacketType::toString(PacketType::PUBLIC_KEY));
+            closeConnection();
         }
 
     } catch (std::exception &e) {
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
                                        ": Error in SetPublicKey stage: " + e.what());
-        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Closing connection");
         closeConnection();
     }
 }
@@ -137,45 +146,38 @@ void ProtocolClient::setSymmetricKey() {
                                          ": Set ServerRSA encryption");
         auto packet = recvPacket();
 
-        if (packet.getType() == packet::PacketType::SYMMETRIC_KEY) {
-            Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
+        if (packet.getType() == PacketType::SYMMETRIC_KEY) {
 
             //check validation of test
             if (cryptoModule.getSymmetricKey() != packet.getBuffer().popAll()) {
                 Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
                                                ": Get wrong returning symmetric key");
-
-                Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                               ": Closing connection");
                 closeConnection();
             } else {
                 Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                                 ": returning symmetric key is correct");
+                                                 ": Returning symmetric key is correct");
 
                 //set AES encryption
                 cryptoModule.use(CryptoModule::Algorithm::AES);
                 Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                                 ": Set symmetric encryption");
+                                                 ": Set AES encryption");
 
 
                 Packet newPacket(PacketType::TEST_KEY);
                 newPacket.getBuffer().push_back(cryptoModule.getSymmetricKey());
                 sendPacket(newPacket);
-                Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                                 ": Send test key for symmetric key");
 
                 stage = Stage::TestKey;
             }
         } else {
             Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                           ": Get wrong packet in SetSymmetricKey stage: " +
-                                           PacketType::toString(packet.getType()));
+                                           ": Get wrong packet in SetSymmetricKey stage. "
+                                           "Expected " + PacketType::toString(PacketType::SYMMETRIC_KEY));
+            closeConnection();
         }
     } catch (std::exception &e) {
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
                                        ": Error in SetPublicKey stage: " + e.what());
-        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Closing connection");
         closeConnection();
     }
 }
@@ -187,36 +189,38 @@ void ProtocolClient::testKey() {
                                          ": Set AES encryption");
         auto packet = recvPacket();
 
-        if (packet.getType() == packet::PacketType::TEST_KEY) {
-            Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
+        if (packet.getType() == PacketType::TEST_KEY) {
 
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                              ": Test key for symmetric key was correct");
 
-            Packet newPacket(PacketType::CLOSE);
-            sendPacket(newPacket);
-            Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                             ": Send close");
+            sendPacket(Packet(PacketType::OPEN_PROT));
 
-            stage = Stage::Else;
+            stage = Stage::StableCommunication;
+
+            selfRegister();
+
         } else {
             Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                           ": Get wrong packet in TestKey stage: " +
-                                           PacketType::toString(packet.getType()));
+                                           ": Get wrong packet in TestKey stage. "
+                                           "Expected " + PacketType::toString(PacketType::TEST_KEY));
+            closeConnection();
         }
     } catch (std::exception &e) {
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Error in SetPublicKey stage: " + e.what());
-        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Closing connection");
+                                       ": Error in TestKey stage: " + e.what());
         closeConnection();
     }
 }
 
-void ProtocolClient::elsePacket() {
+void ProtocolClient::selfRegister() {
+    id = Database::getInstance().getClientDataManager().registerClient(
+            cryptoModule.getOuterRSAKey(), &getBlockingQueue());
+}
+
+void ProtocolClient::stableCommunication() {
     try {
         auto packet = recvPacket();
-        Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
 
         switch (packet.getType()) {
             case PacketType::CLOSE:
@@ -226,30 +230,105 @@ void ProtocolClient::elsePacket() {
                 setName(packet);
                 break;
             case PacketType::ADD_FOLLOWER:
+                addFollower(packet);
                 break;
             case PacketType::REMOVE_FOLLOWER:
+                removeFollower(packet);
                 break;
             case PacketType::REMOVE_FOLLOWED:
+                removeFollowed(packet);
                 break;
             case PacketType::MY_LOCATION:
+                myLocation(packet);
                 break;
 
             default: {
                 Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                               ": Get wrong packet in Else stage: " +
+                                               ": Get wrong packet in StableCommunication stage: " +
                                                PacketType::toString(packet.getType()));
             }
         }
     } catch (std::exception &e) {
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Error in Else stage: " + e.what());
-        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Closing connection");
+                                       ": Error in StableCommunication stage: " + e.what());
         closeConnection();
     }
 }
 
 void ProtocolClient::setName(packet::Packet &packet) {
-    Packet newPacket(PacketType::ACK_OK);
-    sendPacket(newPacket);
+    auto res = Database::getInstance().getClientDataManager().setName(id, toString(packet.getBuffer().popAll()));
+
+    if (res) {
+        sendPacket(Packet(PacketType::ACK_OK));
+    } else {
+        sendPacket(Packet(PacketType::ACK_ERR));
+    }
+}
+
+void ProtocolClient::addFollower(packet::Packet &packet) {
+    auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
+
+    if (followerId > 0) {
+        Database::getInstance().getClientDataManager().addFollower(id, followerId);
+    }
+}
+
+void ProtocolClient::removeFollower(packet::Packet &packet) {
+    auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
+
+    if (followerId > 0) {
+        Database::getInstance().getClientDataManager().removeFollower(id, followerId);
+    }
+}
+
+void ProtocolClient::removeFollowed(packet::Packet &packet) {
+    auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
+
+    if (followerId > 0) {
+        Database::getInstance().getClientDataManager().stopFollowing(id, followerId);
+    }
+}
+
+void ProtocolClient::myLocation(packet::Packet &packet) {
+    if (packet.getBuffer().size() != 16) {
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Error in myLocation stage: Packet does not contain 16 bytes");
+        closeConnection();
+    } else {
+        float latitude;
+        float longitude;
+        time_t deltaTime;
+
+        from_bytes(packet.getBuffer().pop(4), latitude);
+        from_bytes(packet.getBuffer().pop(4), longitude);
+        from_bytes(packet.getBuffer().pop(4), deltaTime);
+        auto time = std::time(nullptr) - deltaTime;
+
+        Database::getInstance().getClientDataManager().addPosition(id, latitude, longitude, time);
+    }
+}
+
+void ProtocolClient::update() {
+    if (stage == Stage::StableCommunication) {
+        auto names = Database::getInstance().getClientDataManager().getNewNames(id);
+        for (auto &name : names) {
+            Packet newPacket(PacketType::NEW_FOLLOWED);
+            newPacket.getBuffer().push_back(to_bytes(name.first));
+            newPacket.getBuffer().push_back(to_bytes(name.second));
+
+            remainingPackets.push(newPacket);
+        }
+
+        auto positions = Database::getInstance().getClientDataManager().getNewPositions(id);
+        for (auto &position : positions) {
+            Packet newPacket(PacketType::LOCATION);
+            newPacket.getBuffer().push_back(to_bytes(position.first));
+            newPacket.getBuffer().push_back(to_bytes(position.second.latitude));
+            newPacket.getBuffer().push_back(to_bytes(position.second.longitude));
+            newPacket.getBuffer().push_back(to_bytes(position.second.time));
+
+            remainingPackets.push(newPacket);
+        }
+    }
+    sendRemainingData();
 }

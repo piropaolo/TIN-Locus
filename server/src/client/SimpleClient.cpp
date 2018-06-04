@@ -15,7 +15,7 @@ SimpleClient::SimpleClient(const sockaddr &client_addr, std::unique_ptr<ClientBu
 //  set clientBuffer blockingQueue for return
     this->clientBuffer->setClientBlockingQueue(&getBlockingQueue());
 
-    Logger::getInstance().logMessage("SimpleClient " + std::to_string(getConnectionFD()) + ": Created");
+    Logger::getInstance().logDebug("SimpleClient " + std::to_string(getConnectionFD()) + ": Created");
 }
 
 SimpleClient::~SimpleClient() {
@@ -74,6 +74,9 @@ message::BlockingQueue<message::Message> &SimpleClient::getBlockingQueue() {
 }
 
 void SimpleClient::closeConnection() {
+    Logger::getInstance().logError("SimpleClient " + std::to_string(getConnectionFD()) +
+                                   ": Closing connection");
+
     Message msg(Message::EraseClient);
     msg.fileDescriptor = std::make_unique<int>(clientBuffer->getFileDescriptor());
     clientManagerBlockingQueue->priorityPush(std::move(msg));
