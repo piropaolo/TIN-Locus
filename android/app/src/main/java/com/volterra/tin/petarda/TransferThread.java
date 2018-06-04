@@ -1,9 +1,5 @@
 package com.volterra.tin.petarda;
 
-import java.util.Random;
-
-import main.java.com.github.koraxiss.Packet;
-import main.java.com.github.koraxiss.PacketType;
 
 public class TransferThread implements Runnable{
     private static boolean isRunning = true;
@@ -11,20 +7,17 @@ public class TransferThread implements Runnable{
     @Override
     public void run() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_BACKGROUND);
+//        Thread thread = new Thread(() -> {
+//            try {
+//                ThreadConnector.sendLocation();
+//                Thread.sleep(5000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//        thread.start();
         while (isRunning) {
-           ListActivity.runOnUIThread(() -> {
-               /*Random random = new Random();
-               Packet packet = new Packet(PacketType._LOCATION);
-
-               short s = (short) random.nextInt(Short.MAX_VALUE + 1);
-               packet.setArg1(s);
-               packet.setArg2(random.nextFloat());
-               packet.setArg3(random.nextFloat());
-               packet.setArg4(random.nextLong());
-
-               ListActivity.insertOrUpdateSingleItem(packet);*/
-           });
-            ThreadConnector.poll();
+           ListActivity.runOnUIThread(ThreadConnector::poll);
             try {
                 ThreadConnector.sendLocation();
                 Thread.sleep(2000);
