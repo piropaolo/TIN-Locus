@@ -1,12 +1,16 @@
 #include <stdexcept>
+#include <ctime>
 
 #include "ProtocolClient.h"
 #include "log/Logger.h"
+#include "database/Database.h"
+#include "buffer/Converter.h"
 
 using namespace Log;
 using namespace message;
 using namespace packet;
 using namespace crypto;
+using namespace buffer;
 using namespace std::chrono_literals;
 
 ProtocolClient::ProtocolClient(std::unique_ptr<Client> &&client, crypto::CryptoModule &cryptoModule)
@@ -16,6 +20,13 @@ ProtocolClient::ProtocolClient(std::unique_ptr<Client> &&client, crypto::CryptoM
     {
         Packet newPacket(PacketType::OPEN_ENCR);
         sendPacket(newPacket);
+    }
+}
+
+ProtocolClient::~ProtocolClient() {
+    //uregister
+    if (id > 0) {
+        Database::getInstance().getClientDataManager().unregister(id);
     }
 }
 
@@ -46,6 +57,25 @@ void ProtocolClient::recv() {
             receiveData();
             break;
 
+        case Message::Update:
+            Logger::getInstance().logMessage(
+                    "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get EraseObserver message");
+            update();
+            break;
+
+        case Message::EraseObserver:
+            if (msg.id) {
+                Logger::getInstance().logDebug(
+                        "ProtocolClient " + std::to_string(getConnectionFD()) +
+                        ": Get EraseObserver message without id");
+            } else {
+                Logger::getInstance().logMessage(
+                        "ProtocolClient " + std::to_string(getConnectionFD()) + ": Get EraseObserver message");
+
+                eraseObserver(*msg.id);
+            }
+            break;
+
         default:
             Logger::getInstance().logDebug("ProtocolClient " + std::to_string(getConnectionFD()) +
                                            ": Get unexpected message: " + msg.toString());
@@ -72,17 +102,16 @@ void ProtocolClient::sendRemainingData() {
 
 void ProtocolClient::receiveData() {
     switch (stage) {
-
         case Stage::SetPublicKey:
             setPublicKey();
             break;
         case Stage::SetSymmetricKey:
             setSymmetricKey();
             break;
-        case Stage::Else:
-            elsePacket();
         case Stage::TestKey:
             testKey();
+        case Stage::StableCommunication:
+            stableCommunication();
         case Stage::Exit:
             break;
     }
@@ -193,12 +222,14 @@ void ProtocolClient::testKey() {
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
                                              ": Test key for symmetric key was correct");
 
-            Packet newPacket(PacketType::CLOSE);
-            sendPacket(newPacket);
+            sendPacket(Packet(PacketType::OPEN_PROT));
             Logger::getInstance().logMessage("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                             ": Send close");
+                                             ": Send open protocol");
 
-            stage = Stage::Else;
+            stage = Stage::StableCommunication;
+
+            selfRegister();
+
         } else {
             Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
                                            ": Get wrong packet in TestKey stage: " +
@@ -213,7 +244,12 @@ void ProtocolClient::testKey() {
     }
 }
 
-void ProtocolClient::elsePacket() {
+void ProtocolClient::selfRegister() {
+    id = Database::getInstance().getClientDataManager().registerClient(
+            cryptoModule.getOuterRSAKey(), &getBlockingQueue());
+}
+
+void ProtocolClient::stableCommunication() {
     try {
         auto packet = recvPacket();
         Logger::getInstance().logMessage("ProtocolClient: Get packet: " + PacketType::toString(packet.getType()));
@@ -226,23 +262,27 @@ void ProtocolClient::elsePacket() {
                 setName(packet);
                 break;
             case PacketType::ADD_FOLLOWER:
+                addFollower(packet);
                 break;
             case PacketType::REMOVE_FOLLOWER:
+                removeFollower(packet);
                 break;
             case PacketType::REMOVE_FOLLOWED:
+                removeFollowed(packet);
                 break;
             case PacketType::MY_LOCATION:
+                myLocation(packet);
                 break;
 
             default: {
                 Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                               ": Get wrong packet in Else stage: " +
+                                               ": Get wrong packet in StableCommunication stage: " +
                                                PacketType::toString(packet.getType()));
             }
         }
     } catch (std::exception &e) {
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
-                                       ": Error in Else stage: " + e.what());
+                                       ": Error in StableCommunication stage: " + e.what());
         Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
                                        ": Closing connection");
         closeConnection();
@@ -250,6 +290,85 @@ void ProtocolClient::elsePacket() {
 }
 
 void ProtocolClient::setName(packet::Packet &packet) {
+    Database::getInstance().getClientDataManager().setName(id, toString(packet.getBuffer().popAll()));
+
     Packet newPacket(PacketType::ACK_OK);
     sendPacket(newPacket);
 }
+
+void ProtocolClient::addFollower(packet::Packet &packet) {
+    auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
+
+    if (followerId > 0) {
+        Database::getInstance().getClientDataManager().addObserver(id, followerId);
+    }
+}
+
+void ProtocolClient::removeFollower(packet::Packet &packet) {
+    auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
+
+    if (followerId > 0) {
+        Database::getInstance().getClientDataManager().eraseObserver(id, followerId);
+    }
+}
+
+void ProtocolClient::removeFollowed(packet::Packet &packet) {
+    auto followerId = Database::getInstance().getClientDataManager().getNameId(toString(packet.getBuffer().popAll()));
+
+    if (followerId > 0) {
+        Database::getInstance().getClientDataManager().eraseWatcher(id, followerId);
+    }
+}
+
+void ProtocolClient::myLocation(packet::Packet &packet) {
+    if (packet.getBuffer().size() != 16) {
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Error in myLocation stage: Packet does not contain 16 bytes");
+        Logger::getInstance().logError("ProtocolClient " + std::to_string(getConnectionFD()) +
+                                       ": Closing connection");
+        closeConnection();
+    } else {
+        float latitude;
+        float longitude;
+        time_t deltaTime;
+
+        from_bytes(packet.getBuffer().pop(4), latitude);
+        from_bytes(packet.getBuffer().pop(4), longitude);
+        from_bytes(packet.getBuffer().pop(4), deltaTime);
+        auto time = std::time(nullptr) - deltaTime;
+
+        Database::getInstance().getClientDataManager().addPosition(id, latitude, longitude, time);
+    }
+}
+
+void ProtocolClient::update() {
+    if (stage == Stage::StableCommunication) {
+        auto names = Database::getInstance().getClientDataManager().getNewNames(id);
+        for (auto &name : names) {
+            Packet newPacket(PacketType::NEW_FOLLOWED);
+            newPacket.getBuffer().push_back(to_bytes(name.first));
+            newPacket.getBuffer().push_back(to_bytes(name.second));
+
+            remainingPackets.push(newPacket);
+        }
+
+        auto positions = Database::getInstance().getClientDataManager().getNewPositions(id);
+        for (auto &position : positions) {
+            Packet newPacket(PacketType::LOCATION);
+            newPacket.getBuffer().push_back(to_bytes(position.first));
+            newPacket.getBuffer().push_back(to_bytes(position.second.latitude));
+            newPacket.getBuffer().push_back(to_bytes(position.second.longitude));
+            newPacket.getBuffer().push_back(to_bytes(position.second.time));
+
+            remainingPackets.push(newPacket);
+        }
+    }
+    sendRemainingData();
+}
+
+void ProtocolClient::eraseObserver(short &id) {
+    Packet newPacket(PacketType::REMOVE_FOLLOWER);
+    newPacket.getBuffer().push_back(to_bytes(id));
+    sendPacket(newPacket);
+}
+

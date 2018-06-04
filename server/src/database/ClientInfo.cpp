@@ -12,19 +12,19 @@ void ClientInfo::addPosition(const float &latitude, const float &longitude, cons
     positions.emplace_back(Position(latitude, longitude, time));
 }
 
-void ClientInfo::addObserver(const int &id) {
+void ClientInfo::addObserver(const short &id) {
     observers.push_back(id);
 }
 
-void ClientInfo::eraseObserver(const int &id) {
+void ClientInfo::eraseObserver(const short &id) {
     observers.remove(id);
 }
 
-void ClientInfo::addWatcher(const int &id) {
-    watchedGroup.emplace_back(Watcher(id, 0));
+void ClientInfo::addWatcher(const short &id) {
+    watchedGroup.emplace_back(Watcher(id));
 }
 
-void ClientInfo::eraseWatcher(const int &id) {
+void ClientInfo::eraseWatcher(const short &id) {
     watchedGroup.remove_if([&id](Watcher &w) { return w.id == id; });
 }
 

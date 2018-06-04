@@ -67,18 +67,23 @@ void EPollManager::readEPoll() {
     }
 
     for (int i = 0; i < nfds; ++i) {
-        if (events[i].events & EPOLLIN) {
-            Logger::getInstance().logDebug(name + ": Run recv for " + std::to_string(
-                    static_cast<EPollEvent *>(events[i].data.ptr)->getFileDescriptor()));
-            static_cast<EPollEvent *>(events[i].data.ptr)->recv();
-        } else if (events[i].events & EPOLLOUT) {
-            Logger::getInstance().logDebug(name + ": Run send for " + std::to_string(
-                    static_cast<EPollEvent *>(events[i].data.ptr)->getFileDescriptor()));
-            static_cast<EPollEvent *>(events[i].data.ptr)->send();
-        } else {
-            Logger::getInstance().logError(
-                    name + ": Error on file descriptor " + std::to_string(events[i].events)
-                    + " with error: " + std::string(std::strerror(errno)));
+        try {
+
+            if (events[i].events & EPOLLIN) {
+                Logger::getInstance().logDebug(name + ": Run recv for " + std::to_string(
+                        static_cast<EPollEvent *>(events[i].data.ptr)->getFileDescriptor()));
+                static_cast<EPollEvent *>(events[i].data.ptr)->recv();
+            } else if (events[i].events & EPOLLOUT) {
+                Logger::getInstance().logDebug(name + ": Run send for " + std::to_string(
+                        static_cast<EPollEvent *>(events[i].data.ptr)->getFileDescriptor()));
+                static_cast<EPollEvent *>(events[i].data.ptr)->send();
+            } else {
+                Logger::getInstance().logError(
+                        name + ": Error on file descriptor " + std::to_string(events[i].events)
+                        + " with error: " + std::string(std::strerror(errno)));
+            }
+        } catch (std::exception &e) {
+            Logger::getInstance().logError(name + ": Error in readEPoll: " + e.what());
         }
     }
 }

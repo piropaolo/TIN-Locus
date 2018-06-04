@@ -1,11 +1,12 @@
 #include "Watcher.h"
 
-Watcher::Watcher(int id, time_t time)
-        : id(id), time(time) {}
+Watcher::Watcher(short id)
+        : id(id) {}
 
 bool Watcher::operator==(const Watcher &rhs) const {
     return id == rhs.id &&
-           time == rhs.time;
+           time == rhs.time &&
+           name == rhs.name;
 }
 
 bool Watcher::operator!=(const Watcher &rhs) const {
@@ -17,7 +18,11 @@ bool Watcher::operator<(const Watcher &rhs) const {
         return true;
     if (rhs.id < id)
         return false;
-    return time < rhs.time;
+    if (time < rhs.time)
+        return true;
+    if (rhs.time < time)
+        return false;
+    return name < rhs.name;
 }
 
 bool Watcher::operator>(const Watcher &rhs) const {
@@ -31,3 +36,4 @@ bool Watcher::operator<=(const Watcher &rhs) const {
 bool Watcher::operator>=(const Watcher &rhs) const {
     return !(*this < rhs);
 }
+

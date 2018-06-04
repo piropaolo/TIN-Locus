@@ -1,10 +1,11 @@
-project(Locus_basedata)
+project(Locus_database)
 
 set(SOURCE_FILES
         Position.cpp Position.h
         Watcher.cpp Watcher.h
         ClientInfo.cpp ClientInfo.h
-        ClientDataManager.cpp ClientDataManager.h)
+        ClientDataManager.cpp ClientDataManager.h
+        Database.cpp Database.h)
 
 add_subdirectory(test)
 

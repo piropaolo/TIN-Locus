@@ -1,19 +1,20 @@
 #ifndef LOCUS_WATCHER_H
 #define LOCUS_WATCHER_H
 
-#include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
 #include <ctime>
 
 struct Watcher {
     Watcher() = default;
-    Watcher(int id, time_t time);
+    explicit Watcher(short id);
 
-    int id = 0;
+    short id = 0;
     time_t time = 0;
+    std::string name;
 
     template<class Archive>
     void serialize(Archive &ar) {
-        ar(CEREAL_NVP(id), CEREAL_NVP(time));
+        ar(CEREAL_NVP(id), CEREAL_NVP(time), CEREAL_NVP(name));
     }
 
     bool operator==(const Watcher &rhs) const;

@@ -11,7 +11,7 @@ class ProtocolClient : public DecoratorClient {
         SetPublicKey,
         SetSymmetricKey,
         TestKey,
-        Else,
+        StableCommunication,
         Exit
     };
 public:
@@ -19,7 +19,7 @@ public:
 
     ProtocolClient(ProtocolClient&&) noexcept = default;
 
-    ~ProtocolClient() override = default;
+    ~ProtocolClient() override;
 
     void recv() override;
     void send() override {}
@@ -31,17 +31,31 @@ private:
     crypto::CryptoModule& cryptoModule;
     Stage stage = Stage::SetPublicKey;
     std::queue<packet::Packet> remainingPackets;
+    short id = 0;
 
     void sendRemainingData();
     void receiveData();
 
     void setPublicKey();
     void setSymmetricKey();
-    void elsePacket();
+    void testKey();
+    void stableCommunication();
 
     void setName(packet::Packet &packet);
 
-    void testKey();
+    void selfRegister();
+
+    void addFollower(packet::Packet &packet);
+
+    void removeFollower(packet::Packet &packet);
+
+    void removeFollowed(packet::Packet &packet);
+
+    void myLocation(packet::Packet &packet);
+
+    void update();
+
+    void eraseObserver(short &id);
 };
 
 

@@ -17,7 +17,7 @@ struct ClientInfo {
     std::vector<unsigned char> publicKey;
     std::string name;
     std::list<Position> positions; //x, y, time
-    std::list<int> observers; //i'm sending the location
+    std::list<short> observers; //i'm sending the location
     std::list<Watcher> watchedGroup; //they are sending the location
 
 //    friend class cereal::access;
@@ -31,11 +31,11 @@ struct ClientInfo {
 
     void addPosition(const float &latitude, const float &longitude, const time_t &time);
 
-    void addObserver(const int &id);
-    void eraseObserver(const int &id);
+    void addObserver(const short &id);
+    void eraseObserver(const short &id);
 
-    void addWatcher(const int &id);
-    void eraseWatcher(const int &id);
+    void addWatcher(const short &id);
+    void eraseWatcher(const short &id);
 
     bool operator==(const ClientInfo &rhs) const;
     bool operator!=(const ClientInfo &rhs) const;
