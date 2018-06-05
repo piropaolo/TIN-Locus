@@ -1,4 +1,4 @@
-package com.github.koraxiss;
+package main.java.com.github.koraxiss;
 
 import java.security.Key;
 import java.security.PublicKey;
