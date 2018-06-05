@@ -45,7 +45,9 @@ public class Client {
                 if (message.getType() == Message.MessageType.PACKET) {
                     switch (message.getPacket().getType()) {
                         case _OPEN:
+                            break:
                         case _OPEN_PROT:
+//                            androidAppQueue.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._SET_NAME)));
                             break;
                         case _ALIVE:
                             sendInstructions.put(new Message(Message.MessageType.PACKET, new Packet(PacketType._ACK_OK)));
@@ -89,8 +91,7 @@ public class Client {
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet));
                             break;
                         case _SET_NAME:
-                            Packet packet1 = new Packet(PacketType._SET_NAME);
-//                            packet1.setArg1(androidApp.getUsername());
+                            Packet packet1 = message.getPacket();
                             sendInstructions.put(new Message(Message.MessageType.PACKET, packet1));
                             break;
                         case _ADD_FOLLOWER:
