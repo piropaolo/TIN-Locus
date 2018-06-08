@@ -14,7 +14,8 @@ import main.java.com.github.koraxiss.PacketType;
 
 public class ThreadConnector {
     private static Thread clientThread;
-    private static Thread transferThread;
+    private static Thread pollThread;
+    private static Thread sendThread;
     private static BlockingQueue<Message> readBlockingQueue;
     private static BlockingQueue<Message> writeBlockingQueue;
     private static HashMap<Short, String> nicknameMap;
@@ -22,7 +23,8 @@ public class ThreadConnector {
     public static void init(File fileDir) {
         readBlockingQueue = new LinkedBlockingQueue<>();
         writeBlockingQueue = new LinkedBlockingQueue<>();
-        transferThread = new Thread(new TransferThread());
+        pollThread = new Thread(new PollThread());
+        sendThread = new Thread(new SendThread());
         nicknameMap = new HashMap<>();
 
         Thread thread = new Thread(() -> {
@@ -35,7 +37,8 @@ public class ThreadConnector {
         });
 
         thread.start();
-        transferThread.start();
+        pollThread.start();
+        sendThread.start();
     }
 
     public static void poll(){

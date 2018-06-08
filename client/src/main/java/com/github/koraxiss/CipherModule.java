@@ -44,7 +44,7 @@ public class CipherModule {
         return keyPair;
     }
 
-    static KeyPair generateKeyPair() throws NoSuchAlgorithmException, IOException {
+    public static KeyPair generateKeyPair() throws NoSuchAlgorithmException, IOException {
         keyPairGenerator = KeyPairGenerator.getInstance("RSA");
         keyPairGenerator.initialize(512);
         keyPair = keyPairGenerator.generateKeyPair();
